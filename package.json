@@ -1,10 +1,11 @@
 {
   "name": "@aixpand/client",
-  "version": "0.9.0",
+  "version": "0.9.1",
   "description": "This is the Typescript client for the AiXpand network.",
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "scripts": {
+    "prepublish": "tsc",
     "format": "prettier --write \"src/**/*.ts\"",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix"
   },
@@ -24,9 +25,9 @@
   ],
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/aixpand-api/core/issues"
+    "url": "https://github.com/AiXpand/tsclient/issues"
   },
-  "homepage": "https://github.com/aixpand-api/core#readme",
+  "homepage": "https://github.com/AiXpand/tsclient#readme",
   "dependencies": {
     "@types/uuid": "^9.0.1",
     "class-transformer": "^0.5.1",
