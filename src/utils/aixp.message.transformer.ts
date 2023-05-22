@@ -21,8 +21,8 @@ export const transformer = (
     rawMessage,
     plugins: Dictionary<PluginRegistration>,
     registeredDCTs: Dictionary<any>,
-): AiXPMessage => {
-    const message: AiXPMessage = {
+): AiXPMessage<any> => {
+    const message: AiXPMessage<any> = {
         path: rawMessage.EE_PAYLOAD_PATH,
         id: rawMessage.messageID,
         type: rawMessage.type,

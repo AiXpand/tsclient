@@ -1,36 +1,41 @@
 import 'reflect-metadata';
 import { EventEmitter2 } from 'eventemitter2';
+import * as mqtt from 'mqtt';
 import { MqttClient } from 'mqtt';
 import { filter, fromEvent, map, Observable, partition } from 'rxjs';
-import * as mqtt from 'mqtt';
 import { plainToInstance } from 'class-transformer';
 import {
-    AiXPMessage,
-    AiXpandDataCaptureThread,
-    VideoStream,
-    VideoFileMultiNode,
-    MetaStream,
-    DummyStream,
-    AiXpandCommandAction,
-    AiXpandPendingTransaction,
-    AiXpNotificationType,
+    AiXpandClientEvent,
     AiXpandClientEventContext,
-    AiXpandUniverseHost,
-    AiXPPayloadData,
+    AiXpandClientOptions,
+    AiXpandCommandAction,
+    AiXpandDataCaptureThread,
+    AiXpandEventType,
+    AiXpandPendingTransaction,
     AiXpandPipeline,
     AiXpandPluginInstance,
-    AiXpandEventType,
-    AiXpandClientEvent,
-    Dictionary,
-    AiXpandClientOptions,
+    AiXpandUniverseHost,
+    AiXPHeartbeatData,
+    AiXPMessage,
     AiXPMessageType,
+    AiXPNotificationData,
+    AiXpNotificationType,
+    AiXPPayloadData,
+    CacheType,
+    Dictionary,
+    DummyStream,
+    MetaStream,
     PluginRegistration,
+    VideoFileMultiNode,
+    VideoStream,
     Void,
 } from './models';
 import { AiXpandException } from './aixpand.exception';
 import { deserialize, transformer } from './utils';
 import { v4 as uuidv4 } from 'uuid';
 import { REST_CUSTOM_EXEC_SIGNATURE } from './abstract.rest.custom.exec.plugin';
+import { BufferServiceInterface } from './models/buffer.service.interface';
+import { AiXpandMemoryBufferService } from './aixpand.memory.buffer.service';
 
 export enum DataCaptureThreadType {
     DUMMY_STREAM = 'ADummyStructStream',
@@ -39,6 +44,11 @@ export enum DataCaptureThreadType {
     META_STREAM = 'MetaStream',
     VOID_STREAM = 'Void',
 }
+
+export type EngineStatus = {
+    online: boolean;
+    lastSeen: Date | null;
+};
 
 /**
  * The AiXpand client handles all communication with the node network. It extends EventEmitter2 in order to be
@@ -72,7 +82,7 @@ export class AiXpandClient extends EventEmitter2 {
      *
      * @private
      */
-    private fleet: string[] = [];
+    private fleet: Dictionary<EngineStatus> = {};
 
     /**
      * The list of all the nodes witnessed while running. It is built based on the heartbeats read from devices outside
@@ -103,7 +113,7 @@ export class AiXpandClient extends EventEmitter2 {
      *
      * @private
      */
-    private streams: Dictionary<Observable<AiXPMessage | any>> = {};
+    private streams: Dictionary<Observable<AiXPMessage<any> | any>> = {};
 
     /**
      * A dictionary of all the Data Capture Threads (DCT) running on the controlled nodes. These are useful if one
@@ -126,6 +136,10 @@ export class AiXpandClient extends EventEmitter2 {
 
     private consumerGroupName: string = null;
 
+    private bufferMessages = false;
+
+    private bufferService: BufferServiceInterface;
+
     private registeredPlugins: Dictionary<PluginRegistration> = {
         [`${REST_CUSTOM_EXEC_SIGNATURE}`]: {
             instanceConfig: null,
@@ -145,7 +159,25 @@ export class AiXpandClient extends EventEmitter2 {
 
         this.initiator = options.name;
         this.aixpNamespace = options.aixpNamespace || 'lummetry';
-        this.fleet = options.fleet;
+        this.bufferMessages = options.options?.bufferPayloadsWhileBooting ?? false;
+
+        if (this.bufferMessages) {
+            switch (options.options.cacheType) {
+                case CacheType.MEMORY:
+                    this.bufferService = new AiXpandMemoryBufferService();
+                    break;
+                case CacheType.CUSTOM:
+                    break;
+            }
+        }
+
+        options.fleet.forEach((engine: string) => {
+            this.fleet[engine] = {
+                online: false,
+                lastSeen: null,
+            };
+        });
+
         this.universe = {};
         this.registeredPlugins = {
             ...this.registeredPlugins,
@@ -160,125 +192,34 @@ export class AiXpandClient extends EventEmitter2 {
         this.connectToMqtt(options);
         this.makeStreams();
 
-        this.streams[AiXpandEventType.HEARTBEAT].subscribe((message: AiXPMessage) => {
-            this.initializeValuesForHost(message.sender.host);
+        this.streams[AiXpandEventType.HEARTBEAT].subscribe((message: AiXPMessage<AiXPHeartbeatData>) =>
+            this.heartbeatProcessor(message),
+        );
 
-            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-            // @ts-ignore
-            Object.keys(message.data.ee.dataCaptureThreads).forEach((streamId) => {
-                // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-                // @ts-ignore
-                const hbDCTconfig = message.data.ee.dataCaptureThreads[streamId];
-                if (hbDCTconfig.getInitiator() !== this.initiator) {
-                    return;
-                }
+        this.streams[AiXpandEventType.PAYLOAD].subscribe((message: AiXPMessage<AiXPPayloadData>) =>
+            this.payloadsProcessor(message),
+        );
 
-                // Update the network DCT dictionary
-                if (!this.dataCaptureThreads[message.sender.host][`${streamId}`]) {
-                    this.dataCaptureThreads[message.sender.host][`${streamId}`] = hbDCTconfig;
-                } else {
-                    try {
-                        this.dataCaptureThreads[message.sender.host][`${streamId}`].update(hbDCTconfig);
-                    } catch (e) {
-                        this.emit(AiXpandClientEvent.AIXP_EXCEPTION, e);
+        this.streams[AiXpandEventType.NOTIFICATION].subscribe((message: AiXPMessage<AiXPNotificationData>) =>
+            this.notificationsProcessor(message),
+        );
+
+        this.on(AiXpandClientEvent.AIXP_RECEIVED_HEARTBEAT_FROM_ENGINE, (data) => {
+            this.fleet[data.executionEngine] = {
+                online: true,
+                lastSeen: new Date(),
+            };
+
+            if (this.bufferMessages) {
+                while (this.bufferService.nodeHasMessages(data.executionEngine)) {
+                    const message = this.bufferService.get(data.executionEngine);
+
+                    if (message.type === AiXPMessageType.NOTIFICATION) {
+                        this.notificationsProcessor(<AiXPMessage<AiXPNotificationData>>message);
+                    } else {
+                        this.payloadsProcessor(<AiXPMessage<AiXPPayloadData>>message);
                     }
                 }
-
-                // Update the network pipelines' DCTs
-                const dct = this.dataCaptureThreads[message.sender.host][`${streamId}`];
-                if (!this.pipelines[message.sender.host][`${streamId}`]) {
-                    this.pipelines[message.sender.host][`${streamId}`] = new AiXpandPipeline(dct, message.sender.host);
-                } else {
-                    this.pipelines[message.sender.host][`${streamId}`].getDataCaptureThread().update(dct);
-                }
-            });
-
-            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-            // @ts-ignore
-            message.data.ee.activePlugins.forEach((plugin: AiXpandPluginInstance<any>) => {
-                if (!this.pipelines[message.sender.host][`${plugin.getStreamId()}`]) {
-                    console.log(`Attempted to attach plugin on non-existing stream: ${plugin.getStreamId()}`);
-                    return;
-                }
-
-                this.pipelines[message.sender.host][`${plugin.getStreamId()}`].attachPluginInstance(plugin);
-            });
-        });
-
-        this.streams[AiXpandEventType.PAYLOAD].subscribe((message) => {
-            const rawPayload: AiXPPayloadData = message.data;
-            let payload = JSON.parse(JSON.stringify(rawPayload)); // deep copy hack...
-            let signature = message.path[2];
-            if (rawPayload.id_tags?.CUSTOM_SIGNATURE) {
-                signature = rawPayload.id_tags?.CUSTOM_SIGNATURE;
-            }
-
-            if (this.registeredPlugins[signature]?.payload) {
-                payload = deserialize(payload, this.registeredPlugins[signature].payload);
-            }
-
-            this.emit(
-                signature,
-                <AiXpandClientEventContext>{
-                    path: message.path,
-                    pipeline: this.pipelines[message.path[0]][message.path[1]],
-                    instance: this.pipelines[message.path[0]][message.path[1]]?.getPluginInstance(message.path[3]),
-                    metadata: message.metadata,
-                    sender: message.sender,
-                    time: message.time,
-                },
-                null, // error object
-                payload,
-            );
-        });
-
-        this.streams[AiXpandEventType.NOTIFICATION].subscribe((message) => {
-            const pending = !this.pendingTransactions[message.path.join(':')]
-                ? null
-                : this.pendingTransactions[message.path.join(':')].shift();
-            if (!pending) {
-                this.pipelines[message.path[0]][message.path[1]]
-                    ?.getPluginInstances()
-                    .forEach((instance: AiXpandPluginInstance<any>) => {
-                        if (message.data.type === AiXpNotificationType.NORMAL) {
-                            return;
-                        }
-
-                        this.emit(
-                            instance.signature,
-                            <AiXpandClientEventContext>{
-                                path: message.path,
-                                pipeline: this.pipelines[message.path[0]][message.path[1]],
-                                instance: this.pipelines[message.path[0]][message.path[1]].getPluginInstance(
-                                    message.path[3],
-                                ),
-                                metadata: message.metadata,
-                                sender: message.sender,
-                                time: message.time,
-                            },
-                            message,
-                            null,
-                        );
-                    });
-
-                this.emit(
-                    AiXpandClientEvent.AIXP_VERBOSE_DEBUG,
-                    `Intercepted notification without pending transaction: ${message.data.notification}`,
-                );
-
-                return;
-            }
-
-            switch (message.data.type) {
-                case AiXpNotificationType.NORMAL:
-                    pending.onSuccess(message);
-                    break;
-                case AiXpNotificationType.ABNORMAL:
-                case AiXpNotificationType.EXCEPTION:
-                    console.dir(message, { depth: null });
-
-                    pending.onFail(message);
-                    break;
             }
         });
     }
@@ -288,23 +229,27 @@ export class AiXpandClient extends EventEmitter2 {
      * in a specific message type category.
      *
      * @param stream
+     * @return Observable<AiXPMessage> a subscribable stream with the selected event type.
      */
-    getStream(stream: AiXpandEventType): Observable<AiXPMessage> {
+    getStream(stream: AiXpandEventType): Observable<AiXPMessage<any>> {
         return this.streams[stream] ?? null;
     }
 
     /**
      * Returns the client's observable universe: all the hosts that sent a heartbeat that are outside
      * this client's fleet.
+     *
+     * @return Dictionary<AiXpandUniverseHost> the observable universe.
      */
     getUniverse(): Dictionary<AiXpandUniverseHost> {
         return this.universe;
     }
 
     /**
-     * Returns a host's pipelines.
+     * Returns all the pipelines associated with a host.
      *
-     * @param node
+     * @param node the network node for which to return the pipelines
+     * @return Dictionary<AiXpandPipeline> the pipelines
      */
     getHostPipelines(node: string): Dictionary<AiXpandPipeline> {
         return this.pipelines[node];
@@ -315,6 +260,7 @@ export class AiXpandClient extends EventEmitter2 {
      *
      * @param node
      * @param streamId
+     * @return AiXpandPipeline the pipeline to return
      */
     getPipeline(node: string, streamId: string): AiXpandPipeline {
         return this.pipelines[node][streamId] ?? null;
@@ -324,6 +270,7 @@ export class AiXpandClient extends EventEmitter2 {
      * Returns the DCTs open on a specific node from the fleet.
      *
      * @param node string, the node name.
+     * @return Dictionary<AiXpandDataCaptureThread<any>> a dictionary of the data capture threads.
      */
     getHostDataCaptureThreads(node: string): Dictionary<AiXpandDataCaptureThread<any>> {
         return this.dataCaptureThreads[node];
@@ -424,6 +371,7 @@ export class AiXpandClient extends EventEmitter2 {
     }
 
     /**
+     * This method removes a pipeline from the client.
      *
      * @param pipeline
      * @throws AiXpandException
@@ -460,60 +408,7 @@ export class AiXpandClient extends EventEmitter2 {
                 upstream: `${options.mqtt.protocol}://${options.mqtt.host}:${options.mqtt.port}`,
             });
 
-            const heartbeatTopic = this.systemTopics[AiXpandEventType.HEARTBEAT].replace(
-                ':namespace:',
-                this.aixpNamespace,
-            );
-
-            // fleet status flag map
-            const fleetStatus = {};
-            for (const ee of this.fleet) {
-                fleetStatus[ee] = false;
-            }
-
-            const allEnginesChecked = (eeMap) => {
-                return Object.keys(eeMap).reduce((status, key) => status && eeMap[key], true);
-            };
-
-            // callback for keeping track of initial heartbeats for each of the fleet execution engines
-            const fleetWarmup = (topic, messageBuffer) => {
-                const message = JSON.parse(messageBuffer.toString('utf-8'));
-                if (message.EE_FORMATTER != 'cavi2' || !this.fleet.includes(message.sender.hostId)) {
-                    return;
-                }
-
-                fleetStatus[message.sender.hostId] = true;
-
-                if (allEnginesChecked(fleetStatus)) {
-                    this.emit(AiXpandClientEvent.AIXP_CLIENT_FLEET_CONNECTED, {
-                        fleet: fleetStatus,
-                    });
-
-                    // remove the warmup listener and heartbeat subscription
-                    // resubscribe to system topics in consumer mode
-                    this.mqttClient.removeListener('message', fleetWarmup);
-                    this.mqttClient.unsubscribe(heartbeatTopic, () => {
-                        this.subscribeToTopics(this.systemTopics);
-                    });
-                }
-            };
-
-            this.mqttClient.subscribe(heartbeatTopic, { qos: 2 }, (err) => {
-                if (err) {
-                    this.emit(AiXpandClientEvent.AIXP_CLIENT_SYS_TOPIC_SUBSCRIBE, {
-                        topic: heartbeatTopic,
-                        err: err,
-                    });
-
-                    return;
-                }
-
-                this.emit(AiXpandClientEvent.AIXP_CLIENT_SYS_TOPIC_SUBSCRIBE, null, {
-                    topic: heartbeatTopic,
-                });
-
-                this.mqttClient.on('message', fleetWarmup);
-            });
+            this.subscribeToTopics(this.systemTopics);
         });
 
         this.mqttClient.on('error', (err) => {
@@ -529,6 +424,12 @@ export class AiXpandClient extends EventEmitter2 {
         });
     }
 
+    /**
+     * Internal method that subscribes to the MQTT topics and emits the subscription success or failure internal events.
+     *
+     * @param topics
+     * @private
+     */
     private subscribeToTopics(topics: Dictionary<string>) {
         const topicSubscriptionStatus = {};
         for (const topic of Object.keys(topics)) {
@@ -560,6 +461,7 @@ export class AiXpandClient extends EventEmitter2 {
                 topicSubscriptionStatus[eventType] = true;
 
                 this.emit(AiXpandClientEvent.AIXP_CLIENT_SYS_TOPIC_SUBSCRIBE, null, {
+                    event: eventType,
                     topic: topic,
                 });
 
@@ -570,12 +472,16 @@ export class AiXpandClient extends EventEmitter2 {
         });
     }
 
+    /**
+     * Internal method for splitting and filtering the MQTT input event stream.
+     * @private
+     */
     private makeStreams() {
         const mainStream = fromEvent(this.mqttClient, 'message')
             .pipe(
                 map((message) => {
                     // parse JSON
-                    return JSON.parse(message[2].payload.toString('utf-8'));
+                    return JSON.parse(message[2].payload.toString('utf-8').replace(/\bNaN\b/g, 'null'));
                 }),
             )
             .pipe(
@@ -587,7 +493,7 @@ export class AiXpandClient extends EventEmitter2 {
             .pipe(
                 filter((message) => {
                     // filter out messages from hosts not in fleet
-                    if (!this.fleet.includes(message.sender.hostId)) {
+                    if (!this.fleet[message.sender.hostId]) {
                         this.universe[message.sender.hostId] = <AiXpandUniverseHost>{
                             host: message.sender.hostId,
                             lastSeen: new Date(),
@@ -600,7 +506,7 @@ export class AiXpandClient extends EventEmitter2 {
                 }),
             )
             .pipe(
-                map((message): AiXPMessage => {
+                map((message): AiXPMessage<any> => {
                     // transform message to AiXPMessage
                     return plainToInstance(
                         AiXPMessage,
@@ -637,6 +543,12 @@ export class AiXpandClient extends EventEmitter2 {
         );
     }
 
+    /**
+     * Internal method for initializing the data for a host the first time it's encountered.
+     *
+     * @param host
+     * @private
+     */
     private initializeValuesForHost(host) {
         if (!this.dataCaptureThreads[host]) {
             this.dataCaptureThreads[host] = {};
@@ -644,6 +556,150 @@ export class AiXpandClient extends EventEmitter2 {
 
         if (!this.pipelines[host]) {
             this.pipelines[host] = {};
+        }
+    }
+
+    private heartbeatProcessor(message: AiXPMessage<AiXPHeartbeatData>) {
+        this.initializeValuesForHost(message.sender.host);
+
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore
+        Object.keys(message.data.ee.dataCaptureThreads).forEach((streamId) => {
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+            // @ts-ignore
+            const hbDCTConfig = message.data.ee.dataCaptureThreads[streamId];
+            if (hbDCTConfig.getInitiator() !== this.initiator) {
+                return;
+            }
+
+            // Update the network DCT dictionary
+            if (!this.dataCaptureThreads[message.sender.host][`${streamId}`]) {
+                this.dataCaptureThreads[message.sender.host][`${streamId}`] = hbDCTConfig;
+            } else {
+                try {
+                    this.dataCaptureThreads[message.sender.host][`${streamId}`].update(hbDCTConfig);
+                } catch (e) {
+                    this.emit(AiXpandClientEvent.AIXP_EXCEPTION, e);
+                }
+            }
+
+            // Update the network pipelines' DCTs
+            const dct = this.dataCaptureThreads[message.sender.host][`${streamId}`];
+            if (!this.pipelines[message.sender.host][`${streamId}`]) {
+                this.pipelines[message.sender.host][`${streamId}`] = new AiXpandPipeline(dct, message.sender.host);
+            } else {
+                this.pipelines[message.sender.host][`${streamId}`].getDataCaptureThread().update(dct);
+            }
+        });
+
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore
+        message.data.ee.activePlugins.forEach((plugin: AiXpandPluginInstance<any>) => {
+            if (!this.pipelines[message.sender.host][`${plugin.getStreamId()}`]) {
+                console.log(`Attempted to attach plugin on non-existing stream: ${plugin.getStreamId()}`);
+                return;
+            }
+
+            this.pipelines[message.sender.host][`${plugin.getStreamId()}`].attachPluginInstance(plugin);
+        });
+
+        this.emit(AiXpandClientEvent.AIXP_RECEIVED_HEARTBEAT_FROM_ENGINE, {
+            executionEngine: message.sender.host,
+        });
+    }
+
+    private payloadsProcessor(message: AiXPMessage<AiXPPayloadData>) {
+        if (this.fleet[message.path[0]].online === false) {
+            this.bufferMessage(message);
+
+            return;
+        }
+
+        const rawPayload = message.data;
+        let payload = JSON.parse(JSON.stringify(rawPayload)); // deep copy hack...
+        let signature = message.path[2];
+        if (rawPayload.id_tags?.CUSTOM_SIGNATURE) {
+            signature = rawPayload.id_tags?.CUSTOM_SIGNATURE;
+        }
+
+        if (this.registeredPlugins[signature]?.payload) {
+            payload = deserialize(payload, this.registeredPlugins[signature].payload);
+        }
+
+        this.emit(
+            signature,
+            <AiXpandClientEventContext>{
+                path: message.path,
+                pipeline: this.pipelines[message.path[0]][message.path[1]],
+                instance: this.pipelines[message.path[0]][message.path[1]]?.getPluginInstance(message.path[3]),
+                metadata: message.metadata,
+                sender: message.sender,
+                time: message.time,
+            },
+            null, // error object
+            payload,
+        );
+    }
+
+    private notificationsProcessor(message: AiXPMessage<AiXPNotificationData>) {
+        if (this.fleet[message.path[0]].online === false) {
+            this.bufferMessage(message);
+
+            return;
+        }
+
+        const pending = !this.pendingTransactions[message.path.join(':')]
+            ? null
+            : this.pendingTransactions[message.path.join(':')].shift();
+        if (!pending) {
+            this.pipelines[message.path[0]][message.path[1]]
+                ?.getPluginInstances()
+                .forEach((instance: AiXpandPluginInstance<any>) => {
+                    if (message.data.type === AiXpNotificationType.NORMAL) {
+                        return;
+                    }
+
+                    this.emit(
+                        instance.signature,
+                        <AiXpandClientEventContext>{
+                            path: message.path,
+                            pipeline: this.pipelines[message.path[0]][message.path[1]],
+                            instance: this.pipelines[message.path[0]][message.path[1]].getPluginInstance(
+                                message.path[3],
+                            ),
+                            metadata: message.metadata,
+                            sender: message.sender,
+                            time: message.time,
+                        },
+                        message,
+                        null,
+                    );
+                });
+
+            this.emit(
+                AiXpandClientEvent.AIXP_VERBOSE_DEBUG,
+                `Intercepted notification without pending transaction: ${message.data.notification}`,
+            );
+
+            return;
+        }
+
+        switch (message.data.type) {
+            case AiXpNotificationType.NORMAL:
+                pending.onSuccess(message);
+                break;
+            case AiXpNotificationType.ABNORMAL:
+            case AiXpNotificationType.EXCEPTION:
+                console.dir(message, { depth: null });
+
+                pending.onFail(message);
+                break;
+        }
+    }
+
+    private bufferMessage(message: AiXPMessage<AiXPPayloadData | AiXPNotificationData>) {
+        if (this.bufferMessages) {
+            this.bufferService.store(message);
         }
     }
 }

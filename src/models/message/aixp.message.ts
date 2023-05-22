@@ -3,11 +3,8 @@ import { Type } from 'class-transformer';
 import { AiXPMessageSender } from './aixp.message.sender';
 import { AiXPMessageTime } from './aixp.message.time';
 import { AiXPMessageMetadata } from './aixp.message.metadata';
-import { AiXPHeartbeatData } from './aixp.heartbeat.data';
-import { AiXPNotificationData } from './aixp.notification.data';
-import { AiXPPayloadData } from './aixp.payload.data';
 
-export class AiXPMessage {
+export class AiXPMessage<T> {
     @IsNotEmpty()
     path: string[];
 
@@ -47,5 +44,5 @@ export class AiXPMessage {
     metadata: AiXPMessageMetadata;
 
     @ValidateNested()
-    data: AiXPHeartbeatData | AiXPNotificationData | AiXPPayloadData;
+    data: T;
 }
