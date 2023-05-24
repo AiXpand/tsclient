@@ -22,6 +22,7 @@ export interface AiXpandClientOptions {
     consumerGroup?: string | null;
     plugins: Dictionary<PluginRegistration>;
     options?: {
+        offlineTimeout?: number;
         bufferPayloadsWhileBooting: boolean;
         cacheType: CacheType;
         cacheService?: BufferServiceInterface;
