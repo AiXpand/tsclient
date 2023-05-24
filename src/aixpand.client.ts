@@ -239,6 +239,45 @@ export class AiXpandClient extends EventEmitter2 {
     }
 
     /**
+     * Method for registering a new execution engine without rebooting the client.
+     *
+     * @param engine
+     */
+    registerExecutionEngine(engine: string) {
+        if (!this.fleet[engine]) {
+            this.fleet[engine] = {
+                online: false,
+                lastSeen: null,
+            };
+
+            this.emit(AiXpandClientEvent.AIXP_ENGINE_REGISTERED, {
+                executionEngine: engine,
+            });
+        }
+
+        return;
+    }
+
+    /**
+     * Method for deregistering an execution engine without rebooting the client.
+     *
+     * @param engine
+     */
+    deregisterExecutionEngine(engine: string) {
+        if (this.fleet[engine]) {
+            delete this.fleet[engine];
+            delete this.pipelines[engine];
+            delete this.dataCaptureThreads[engine];
+
+            this.emit(AiXpandClientEvent.AIXP_ENGINE_DEREGISTERED, {
+                executionEngine: engine,
+            });
+        }
+
+        return;
+    }
+
+    /**
      * Returns a specific stream of events in the network. It can offer a window inside all the messages published
      * in a specific message type category.
      *
