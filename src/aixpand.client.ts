@@ -50,6 +50,10 @@ export type EngineStatus = {
     lastSeen: Date | null;
 };
 
+export type ClientOptions = {
+    offlineTimeout: number;
+}
+
 /**
  * The AiXpand client handles all communication with the node network. It extends EventEmitter2 in order to be
  * able to emit messages for the consumer systems.
@@ -140,6 +144,12 @@ export class AiXpandClient extends EventEmitter2 {
 
     private bufferService: BufferServiceInterface;
 
+    private options: ClientOptions = {
+        offlineTimeout: 60,
+    };
+
+    private timeoutCallbacks: Dictionary<{timer: any, timeout: number}> = {};
+
     private registeredPlugins: Dictionary<PluginRegistration> = {
         [`${REST_CUSTOM_EXEC_SIGNATURE}`]: {
             instanceConfig: null,
@@ -169,6 +179,10 @@ export class AiXpandClient extends EventEmitter2 {
                 case CacheType.CUSTOM:
                     break;
             }
+        }
+
+        if (options.options.offlineTimeout) {
+            this.options.offlineTimeout = options.options.offlineTimeout;
         }
 
         options.fleet.forEach((engine: string) => {
@@ -562,6 +576,8 @@ export class AiXpandClient extends EventEmitter2 {
     private heartbeatProcessor(message: AiXPMessage<AiXPHeartbeatData>) {
         this.initializeValuesForHost(message.sender.host);
 
+        this.markAsSeen(message.sender.host, this.options.offlineTimeout);
+
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-ignore
         Object.keys(message.data.ee.dataCaptureThreads).forEach((streamId) => {
@@ -700,6 +716,21 @@ export class AiXpandClient extends EventEmitter2 {
     private bufferMessage(message: AiXPMessage<AiXPPayloadData | AiXPNotificationData>) {
         if (this.bufferMessages) {
             this.bufferService.store(message);
+        }
+    }
+
+    private markAsSeen(engine: string, timeout: number) {
+        if (this.timeoutCallbacks[engine]?.timer) {
+            clearTimeout(this.timeoutCallbacks[engine].timer);
+        }
+
+        this.timeoutCallbacks[engine] = {
+            timer: setTimeout(() => {
+                this.emit(AiXpandClientEvent.AIXP_ENGINE_OFFLINE, {
+                    executionEngine: engine
+                });
+            }, timeout * 1000),
+            timeout: timeout,
         }
     }
 }
