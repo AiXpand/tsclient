@@ -134,28 +134,73 @@ export class AiXpandClient extends EventEmitter2 {
      */
     private pipelines: Dictionary<Dictionary<AiXpandPipeline>> = {};
 
+    /**
+     * A dictionary for keeping references to pending promises that wrap EE plugin updates.
+     *
+     * @private
+     */
     private pendingTransactions: Dictionary<AiXpandPendingTransaction[]> = {};
 
+    /**
+     * Flag for instructing the MQTT client how to connect to the payloads topic.
+     *
+     * @private
+     */
     private sharedSubscription = false;
 
+    /**
+     * The consumer group name to use when subscribing to MQTT payloads topic as a shared subscription.
+     *
+     * @private
+     */
     private consumerGroupName: string = null;
 
+    /**
+     * Flag to instruct the client to buffer the incoming messages while the client boots.
+     *
+     * @private
+     */
     private bufferMessages = false;
 
+    /**
+     * The buffer service implementation to use for buffering the messages.
+     *
+     * @private
+     */
     private bufferService: BufferServiceInterface;
 
+    /**
+     * Miscellaneous options for changing client behavior.
+     *
+     * @private
+     */
     private options: ClientOptions = {
         offlineTimeout: 60,
     };
 
+    /**
+     * Dictionary for keeping track of execution engine timeout callbacks.
+     *
+     * @private
+     */
     private timeoutCallbacks: Dictionary<{timer: any, timeout: number}> = {};
 
+    /**
+     * Dictionary for keeping track of the handlers for each type of observed PluginInstance.
+     *
+     * @private
+     */
     private registeredPlugins: Dictionary<PluginRegistration> = {
         [`${REST_CUSTOM_EXEC_SIGNATURE}`]: {
             instanceConfig: null,
         },
     };
 
+    /**
+     * Dictionary for registering the default DataCaptureThread types.
+     *
+     * @private
+     */
     private registeredDCTs: Dictionary<any> = {
         [`${DataCaptureThreadType.VIDEO_STREAM}`]: VideoStream,
         [`${DataCaptureThreadType.META_STREAM}`]: MetaStream,
@@ -268,6 +313,7 @@ export class AiXpandClient extends EventEmitter2 {
             delete this.fleet[engine];
             delete this.pipelines[engine];
             delete this.dataCaptureThreads[engine];
+            delete this.timeoutCallbacks[engine];
 
             this.emit(AiXpandClientEvent.AIXP_ENGINE_DEREGISTERED, {
                 executionEngine: engine,
@@ -612,6 +658,12 @@ export class AiXpandClient extends EventEmitter2 {
         }
     }
 
+    /**
+     * Private method for processing heartbeat information.
+     *
+     * @param message
+     * @private
+     */
     private heartbeatProcessor(message: AiXPMessage<AiXPHeartbeatData>) {
         this.initializeValuesForHost(message.sender.host);
 
@@ -663,6 +715,12 @@ export class AiXpandClient extends EventEmitter2 {
         });
     }
 
+    /**
+     * Private method for handing the deserialization and emission of plugin payload data.
+     *
+     * @param message
+     * @private
+     */
     private payloadsProcessor(message: AiXPMessage<AiXPPayloadData>) {
         if (this.fleet[message.path[0]].online === false) {
             this.bufferMessage(message);
@@ -696,6 +754,14 @@ export class AiXpandClient extends EventEmitter2 {
         );
     }
 
+    /**
+     * Private method for processing the network notifications and closing of all the
+     * relevant pending transactions. It also emits internal events for all the plugins
+     * associated to the notification.
+     *
+     * @param message
+     * @private
+     */
     private notificationsProcessor(message: AiXPMessage<AiXPNotificationData>) {
         if (this.fleet[message.path[0]].online === false) {
             this.bufferMessage(message);
@@ -752,12 +818,26 @@ export class AiXpandClient extends EventEmitter2 {
         }
     }
 
+    /**
+     * Private method that stores the messages in the buffer if message buffering is enabled.
+     *
+     * @param message
+     * @private
+     */
     private bufferMessage(message: AiXPMessage<AiXPPayloadData | AiXPNotificationData>) {
         if (this.bufferMessages) {
             this.bufferService.store(message);
         }
     }
 
+    /**
+     * Private method for handling the offline timeouts for the execution engines
+     * registered in the fleet.
+     *
+     * @param engine
+     * @param timeout
+     * @private
+     */
     private markAsSeen(engine: string, timeout: number) {
         if (this.timeoutCallbacks[engine]?.timer) {
             clearTimeout(this.timeoutCallbacks[engine].timer);
