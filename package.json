@@ -1,6 +1,6 @@
 {
   "name": "@aixpand/client",
-  "version": "0.9.2",
+  "version": "0.10.1",
   "description": "This is the Typescript client for the AiXpand network.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -21,7 +21,8 @@
   "author": "AiXpand Team",
   "contributors": [
     "Radu Lupaescu <radu.lupaescu@gmail.com>",
-    "Narcis Cruceru <narcis.cru@gmail.com>"
+    "Narcis Cruceru <narcis.cru@gmail.com>",
+    "George Ciochinaru <ciogeo@gmail.com>"
   ],
   "license": "MIT",
   "bugs": {
