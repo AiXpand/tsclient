@@ -25,6 +25,7 @@ import {
     Dictionary,
     DummyStream,
     MetaStream,
+    MqttOptions,
     PluginRegistration,
     VideoFileMultiNode,
     VideoStream,
@@ -52,7 +53,7 @@ export type EngineStatus = {
 
 export type ClientOptions = {
     offlineTimeout: number;
-}
+};
 
 /**
  * The AiXpand client handles all communication with the node network. It extends EventEmitter2 in order to be
@@ -72,6 +73,8 @@ export class AiXpandClient extends EventEmitter2 {
      * @private
      */
     private readonly initiator: string;
+
+    private mqttOptions: MqttOptions;
 
     /**
      * The wrapped MQTT client.
@@ -183,7 +186,7 @@ export class AiXpandClient extends EventEmitter2 {
      *
      * @private
      */
-    private timeoutCallbacks: Dictionary<{timer: any, timeout: number}> = {};
+    private timeoutCallbacks: Dictionary<{ timer: any; timeout: number }> = {};
 
     /**
      * Dictionary for keeping track of the handlers for each type of observed PluginInstance.
@@ -248,7 +251,15 @@ export class AiXpandClient extends EventEmitter2 {
             this.consumerGroupName = options.consumerGroup;
         }
 
-        this.connectToMqtt(options);
+        this.mqttOptions = options.mqtt;
+    }
+
+    getName(): string {
+        return this.initiator;
+    }
+
+    boot() {
+        this.connectToMqtt(this.mqttOptions);
         this.makeStreams();
 
         this.streams[AiXpandEventType.HEARTBEAT].subscribe((message: AiXPMessage<AiXPHeartbeatData>) =>
@@ -283,6 +294,49 @@ export class AiXpandClient extends EventEmitter2 {
         });
     }
 
+    shutdown() {
+        Object.keys(this.fleet).forEach((engine) => {
+            this.deregisterExecutionEngine(engine);
+
+            if (Object.keys(this.fleet).length == 0) {
+                // all engines are deregistered, time to unsubscribe
+                const topicSubscriptionStatus = {};
+                for (const eventName of Object.keys(this.systemTopics)) {
+                    topicSubscriptionStatus[eventName] = false;
+                }
+
+                const allTopicsUnsubscribed = (topicMap) => {
+                    return Object.keys(topicMap).reduce((status, key) => status && topicMap[key], true);
+                };
+
+                Object.keys(this.systemTopics).forEach((eventName) => {
+                    let groupPrefix = '';
+                    if (this.sharedSubscription) {
+                        groupPrefix = `$share/${this.consumerGroupName}/`;
+                    }
+                    const topic = this.systemTopics[eventName]
+                        .replace(':namespace:', this.aixpNamespace)
+                        .replace(':group:', groupPrefix);
+
+                    this.mqttClient.unsubscribe(topic, {}, () => {
+                        topicSubscriptionStatus[eventName] = true;
+
+                        this.emit(AiXpandClientEvent.AIXP_CLIENT_SYS_TOPIC_UNSUBSCRIBE, null, {
+                            eventName: eventName,
+                            topic: topic,
+                        });
+
+                        if (allTopicsUnsubscribed(topicSubscriptionStatus)) {
+                            this.mqttClient.end(true, {}, () => {
+                                this.emit(AiXpandClientEvent.AIXP_CLIENT_SHUTDOWN, null, true);
+                            });
+                        }
+                    });
+                });
+            }
+        });
+    }
+
     /**
      * Method for registering a new execution engine without rebooting the client.
      *
@@ -294,6 +348,8 @@ export class AiXpandClient extends EventEmitter2 {
                 online: false,
                 lastSeen: null,
             };
+
+            delete this.universe[engine];
 
             this.emit(AiXpandClientEvent.AIXP_ENGINE_REGISTERED, {
                 executionEngine: engine,
@@ -313,6 +369,9 @@ export class AiXpandClient extends EventEmitter2 {
             delete this.fleet[engine];
             delete this.pipelines[engine];
             delete this.dataCaptureThreads[engine];
+
+            clearTimeout(this.timeoutCallbacks[engine].timer);
+
             delete this.timeoutCallbacks[engine];
 
             this.emit(AiXpandClientEvent.AIXP_ENGINE_DEREGISTERED, {
@@ -494,17 +553,17 @@ export class AiXpandClient extends EventEmitter2 {
      * @param options
      * @private
      */
-    private connectToMqtt(options) {
-        this.mqttClient = mqtt.connect(`${options.mqtt.protocol}://${options.mqtt.host}:${options.mqtt.port}`, {
-            username: options.mqtt.username,
-            password: options.mqtt.password,
-            clean: options.mqtt.session.clean,
-            clientId: options.mqtt.session.clientId,
+    private connectToMqtt(options: MqttOptions) {
+        this.mqttClient = mqtt.connect(`${options.protocol}://${options.host}:${options.port}`, {
+            username: options.username,
+            password: options.password,
+            clean: options.session.clean,
+            clientId: options.session.clientId,
         });
 
         this.mqttClient.on('connect', () => {
             this.emit(AiXpandClientEvent.AIXP_CLIENT_CONNECTED, {
-                upstream: `${options.mqtt.protocol}://${options.mqtt.host}:${options.mqtt.port}`,
+                upstream: `${options.protocol}://${options.host}:${options.port}`,
             });
 
             this.subscribeToTopics(this.systemTopics);
@@ -846,10 +905,10 @@ export class AiXpandClient extends EventEmitter2 {
         this.timeoutCallbacks[engine] = {
             timer: setTimeout(() => {
                 this.emit(AiXpandClientEvent.AIXP_ENGINE_OFFLINE, {
-                    executionEngine: engine
+                    executionEngine: engine,
                 });
             }, timeout * 1000),
             timeout: timeout,
-        }
+        };
     }
 }
