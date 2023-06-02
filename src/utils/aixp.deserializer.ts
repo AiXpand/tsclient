@@ -10,6 +10,10 @@ export const deserialize = <T>(object: any, targetType: { new (): T }): T => {
         Reflect.getMetadata('propertyMappings', targetType) || new Map();
 
     propertyMappings.forEach((property, key) => {
+        if (!object) {
+            return;
+        }
+
         if (object.hasOwnProperty(property.propertyName)) {
             const embeddedConfig = embeddedProperties.get(key);
             if (embeddedConfig?.options.isArray) {
