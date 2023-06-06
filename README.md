@@ -30,6 +30,8 @@ const aixpOptions: AiXpandClientOptions = {
 
 const client = new AiXpandClient(aixpOptions);
 
+client.boot();
+
 // THIS IS AN EXAMPLE OF HOW TO INTERCEPT A SPECIFIC SYSTEM STREAM
 client.getStream(AiXpandEventType.HEARTBEAT).subscribe((hearbeatData) => {
     console.log('-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-');
