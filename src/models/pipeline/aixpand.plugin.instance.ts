@@ -1,4 +1,5 @@
 import { REST_CUSTOM_EXEC_SIGNATURE } from '../../abstract.rest.custom.exec.plugin';
+import { CallbackFunction } from '../callback.function.type';
 
 export type PluginInstanceTimers = {
     init?: Date | null;
@@ -19,8 +20,9 @@ export class AiXpandPluginInstance<T> {
     public outsideWorkingHours = false;
     public frequency: number | null = null;
     private readonly tags: Map<string, string>;
+    private callback: CallbackFunction = null;
 
-    constructor(id: string, config: T) {
+    constructor(id: string, config: T, callback: CallbackFunction = null) {
         if (!config) {
             return;
         } // TODO: should throw
@@ -33,6 +35,7 @@ export class AiXpandPluginInstance<T> {
 
         this.config = config;
         this.tags = new Map<string, string>();
+        this.callback = callback;
     }
 
     removeTag(key): AiXpandPluginInstance<T> {
@@ -77,5 +80,25 @@ export class AiXpandPluginInstance<T> {
 
     getStreamId() {
         return this.streamId;
+    }
+
+    hasCallback(): boolean {
+        return !!this.callback;
+    }
+
+    setCallback(fn: CallbackFunction) {
+        this.callback = fn;
+
+        return this;
+    }
+
+    getCallback(): CallbackFunction {
+        return this.callback;
+    }
+
+    clearCallback() {
+        this.callback = null;
+
+        return this;
     }
 }

@@ -798,19 +798,19 @@ export class AiXpandClient extends EventEmitter2 {
             payload = deserialize(payload, this.registeredPlugins[signature].payload);
         }
 
-        this.emit(
-            signature,
-            <AiXpandClientEventContext>{
-                path: message.path,
-                pipeline: this.pipelines[message.path[0]][message.path[1]],
-                instance: this.pipelines[message.path[0]][message.path[1]]?.getPluginInstance(message.path[3]),
-                metadata: message.metadata,
-                sender: message.sender,
-                time: message.time,
-            },
-            null, // error object
-            payload,
-        );
+        const context = this.buildContext(message);
+        if (context.instance.hasCallback()) {
+            const callback = context.instance.getCallback();
+
+            callback(context, null, payload);
+        } else {
+            this.emit(
+                signature,
+                context,
+                null, // error object
+                payload,
+            );
+        }
     }
 
     /**
@@ -839,21 +839,14 @@ export class AiXpandClient extends EventEmitter2 {
                         return;
                     }
 
-                    this.emit(
-                        instance.signature,
-                        <AiXpandClientEventContext>{
-                            path: message.path,
-                            pipeline: this.pipelines[message.path[0]][message.path[1]],
-                            instance: this.pipelines[message.path[0]][message.path[1]].getPluginInstance(
-                                message.path[3],
-                            ),
-                            metadata: message.metadata,
-                            sender: message.sender,
-                            time: message.time,
-                        },
-                        message,
-                        null,
-                    );
+                    const context = this.buildContext(message);
+                    if (context.instance.hasCallback()) {
+                        const callback = context.instance.getCallback();
+
+                        callback(context, message, null);
+                    } else {
+                        this.emit(instance.signature, context, message, null);
+                    }
                 });
 
             this.emit(
@@ -875,6 +868,17 @@ export class AiXpandClient extends EventEmitter2 {
                 pending.onFail(message);
                 break;
         }
+    }
+
+    private buildContext(message) {
+        return <AiXpandClientEventContext>{
+            path: message.path,
+            pipeline: this.pipelines[message.path[0]][message.path[1]],
+            instance: this.pipelines[message.path[0]][message.path[1]]?.getPluginInstance(message.path[3]),
+            metadata: message.metadata,
+            sender: message.sender,
+            time: message.time,
+        };
     }
 
     /**
