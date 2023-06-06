@@ -59,7 +59,7 @@ export class AiXpandPipeline {
                 collection[plugin.signature] = [];
             }
 
-            const config = serialize(plugin.config);
+            const config = serialize(plugin.config, null, plugin.getTags());
             collection[plugin.signature].push({
                 ...config,
                 INSTANCE_ID: plugin.id,
