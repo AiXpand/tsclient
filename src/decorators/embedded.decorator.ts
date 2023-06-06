@@ -1,5 +1,6 @@
 import 'reflect-metadata';
 import { AiXpandDecoratorOptions } from './aixpand.decorator.options';
+import { reservedPropertyNames } from './bind.decorator';
 
 const defaultOptions: AiXpandDecoratorOptions = {
     isArray: false,
@@ -11,6 +12,10 @@ export const Embedded = (
     propertyName: string = null,
     options: AiXpandDecoratorOptions = {},
 ): PropertyDecorator => {
+    if (reservedPropertyNames.includes(propertyName)) {
+        throw new Error(`"${propertyName}" is reserved and handled separately by the serializer.`);
+    }
+
     options = { ...defaultOptions, ...options };
 
     return function (target: any, propertyKey?: string | symbol) {

@@ -18,6 +18,7 @@ export class AiXpandPluginInstance<T> {
     public timers: PluginInstanceTimers = null;
     public outsideWorkingHours = false;
     public frequency: number | null = null;
+    private readonly tags: Map<string, string>;
 
     constructor(id: string, config: T) {
         if (!config) {
@@ -31,6 +32,23 @@ export class AiXpandPluginInstance<T> {
         }
 
         this.config = config;
+        this.tags = new Map<string, string>();
+    }
+
+    removeTag(key): AiXpandPluginInstance<T> {
+        this.tags.delete(key);
+
+        return this;
+    }
+
+    addTag(key, value): AiXpandPluginInstance<T> {
+        this.tags.set(key, value);
+
+        return this;
+    }
+
+    getTags(): Map<string, string> {
+        return this.tags;
     }
 
     getConfig(): T {

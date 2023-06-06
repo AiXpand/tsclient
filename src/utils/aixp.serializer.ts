@@ -2,7 +2,11 @@ import 'reflect-metadata';
 import { REST_CUSTOM_EXEC_SIGNATURE } from '../abstract.rest.custom.exec.plugin';
 import { AiXpandDecoratorOptions } from '../decorators';
 
-export const serialize = <T>(instance: T, signature = null): any => {
+export const serialize = <T>(
+    instance: T,
+    signature = null,
+    tags: Map<string, string> = new Map<string, string>(),
+): any => {
     if (
         !(
             Reflect.hasMetadata('plugin-instance', instance.constructor) ||
@@ -14,14 +18,21 @@ export const serialize = <T>(instance: T, signature = null): any => {
         return;
     }
 
+    const serializedObject: any = {};
     const isDataCaptureThread = Reflect.getMetadata('data-capture-thread-config', instance.constructor);
     const isPluginInstance = Reflect.getMetadata('plugin-instance', instance.constructor);
     if (isPluginInstance) {
         signature = Reflect.getMetadata('signature', instance.constructor);
+
         if (Reflect.hasMetadata('is-rest-custom-exec', instance.constructor)) {
-            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-            // @ts-ignore
-            instance.addTag('CUSTOM_SIGNATURE', signature);
+            tags.set('CUSTOM_SIGNATURE', signature);
+        }
+
+        if (tags.size) {
+            serializedObject['ID_TAGS'] = {};
+            tags.forEach((value, key) => {
+                serializedObject['ID_TAGS'][`${key}`] = value;
+            });
         }
     } else if (!isDataCaptureThread) {
         const partSignatures = Reflect.getMetadata('signatures', instance.constructor);
@@ -33,7 +44,6 @@ export const serialize = <T>(instance: T, signature = null): any => {
         }
     }
 
-    const serializedObject: any = {};
     const embeddedProperties: Map<string, { embeddedType: { new (): any }; options: AiXpandDecoratorOptions }> =
         Reflect.getMetadata('embeddedProperties', instance.constructor) || new Map();
     const propertyMappings: Map<string, { propertyName: string; options: AiXpandDecoratorOptions }> =

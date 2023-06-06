@@ -193,6 +193,12 @@ const heartbeatTransformer = (
             deserialize(rawPluginConfig, instanceClass),
         );
 
+        if (rawPluginConfig['ID_TAGS']) {
+            Object.keys(rawPluginConfig['ID_TAGS']).forEach((key) => {
+                pluginInstance.addTag(key, rawPluginConfig['ID_TAGS'][key]);
+            });
+        }
+
         pluginInstance
             .updateMetadata(rawPluginInfo.FREQUENCY, rawPluginInfo.OUTSIDE_WORKING_HOURS, {
                 init: new Date(rawPluginInfo.INIT_TIMESTAMP),

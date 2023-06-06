@@ -22,9 +22,6 @@ export class RestRequest {
 
 @RestCustomExecPlugin()
 export abstract class AbstractRestCustomExec {
-    @Bind('ID_TAGS')
-    tags: any = {};
-
     @Bind('PROCESS_DELAY')
     processDelay: number;
 
@@ -42,9 +39,5 @@ export abstract class AbstractRestCustomExec {
         this.allowEmptyInputs = allowEmptyInputs;
         this.runWithoutImage = runWithoutImage;
         this.request = new RestRequest(data);
-    }
-
-    addTag(key: string, value: any) {
-        this.tags[key] = value;
     }
 }

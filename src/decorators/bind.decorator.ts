@@ -6,8 +6,14 @@ const defaultOptions: AiXpandDecoratorOptions = {
     nullable: false,
 };
 
+export const reservedPropertyNames = ['ID_TAGS', 'LINKED_INSTANCES'];
+
 export const Bind = (configPropertyName: string, options: AiXpandDecoratorOptions = {}): PropertyDecorator => {
     options = { ...defaultOptions, ...options };
+
+    if (reservedPropertyNames.includes(configPropertyName)) {
+        throw new Error(`"${configPropertyName}" is reserved and handled separately by the serializer.`);
+    }
 
     return function (target: any, propertyKey: string | symbol) {
         const propertyMappings: Map<string, { propertyName: string; options: AiXpandDecoratorOptions }> =
