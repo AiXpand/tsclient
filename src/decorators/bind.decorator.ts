@@ -1,14 +1,14 @@
 import 'reflect-metadata';
-import { AiXpandDecoratorOptions } from './aixpand.decorator.options';
+import { BindingOptions } from './binding.options';
 
-const defaultOptions: AiXpandDecoratorOptions = {
+const defaultOptions: BindingOptions = {
     isArray: false,
     nullable: false,
 };
 
 export const reservedPropertyNames = ['ID_TAGS', 'LINKED_INSTANCES'];
 
-export const Bind = (configPropertyName: string, options: AiXpandDecoratorOptions = {}): PropertyDecorator => {
+export const Bind = (configPropertyName: string, options: BindingOptions = {}): PropertyDecorator => {
     options = { ...defaultOptions, ...options };
 
     if (reservedPropertyNames.includes(configPropertyName)) {
@@ -16,7 +16,7 @@ export const Bind = (configPropertyName: string, options: AiXpandDecoratorOption
     }
 
     return function (target: any, propertyKey: string | symbol) {
-        const propertyMappings: Map<string, { propertyName: string; options: AiXpandDecoratorOptions }> =
+        const propertyMappings: Map<string, { propertyName: string; options: BindingOptions }> =
             Reflect.getMetadata('propertyMappings', target.constructor) || new Map();
         propertyMappings.set(propertyKey.toString(), { propertyName: configPropertyName, options });
         Reflect.defineMetadata('propertyMappings', propertyMappings, target.constructor);

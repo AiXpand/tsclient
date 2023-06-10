@@ -127,6 +127,7 @@ const heartbeatTransformer = (
             servingPids: rawMessage.metadata.serving_pids,
             dataCaptureThreads: <Dictionary<AiXpandDataCaptureThread<any>>>{},
             activePlugins: <AiXpandPluginInstance<any>[]>[],
+            links: {},
         },
     };
 
@@ -212,6 +213,13 @@ const heartbeatTransformer = (
             .setStreamId(rawPluginInfo.STREAM_ID);
 
         heartbeat.ee.activePlugins.push(pluginInstance);
+
+        if (rawPluginConfig['LINKED_INSTANCES']) {
+            heartbeat.ee.links[pluginInstance.id] = {
+                ownPipeline: rawPluginInfo.STREAM_ID,
+                instances: rawPluginConfig['LINKED_INSTANCES'],
+            };
+        }
     }
 
     return plainToInstance(AiXPHeartbeatData, heartbeat);
