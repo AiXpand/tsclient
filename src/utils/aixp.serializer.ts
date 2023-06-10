@@ -1,11 +1,20 @@
 import 'reflect-metadata';
 import { REST_CUSTOM_EXEC_SIGNATURE } from '../abstract.rest.custom.exec.plugin';
-import { AiXpandDecoratorOptions } from '../decorators';
+import { BindingOptions } from '../decorators';
+import { AiXpandPluginInstance } from '../models';
+
+export type LinkInfo<T> = {
+    links: {
+        instances: AiXpandPluginInstance<T>[];
+        collector: AiXpandPluginInstance<T>;
+    };
+};
 
 export const serialize = <T>(
     instance: T,
     signature = null,
     tags: Map<string, string> = new Map<string, string>(),
+    linkInfo: null | LinkInfo<T> = null,
 ): any => {
     if (
         !(
@@ -34,6 +43,23 @@ export const serialize = <T>(
                 serializedObject['ID_TAGS'][`${key}`] = value;
             });
         }
+
+        if (linkInfo && linkInfo.links.collector === null && linkInfo.links.instances.length === 0) {
+            // single instance
+            serializedObject['SINGLE_INSTANCE'] = true;
+        }
+
+        if (linkInfo && linkInfo.links.collector !== null) {
+            // subordinated linked instance
+            serializedObject['SINGLE_INSTANCE'] = false;
+        }
+
+        if (linkInfo && linkInfo.links.instances.length > 0) {
+            // main linked instance
+            serializedObject['LINKED_INSTANCES'] = linkInfo.links.instances.map(
+                (instance: AiXpandPluginInstance<T>) => [instance.getStreamId(), instance.id],
+            );
+        }
     } else if (!isDataCaptureThread) {
         const partSignatures = Reflect.getMetadata('signatures', instance.constructor);
         if (!partSignatures.includes(signature) && !partSignatures.includes(REST_CUSTOM_EXEC_SIGNATURE)) {
@@ -44,9 +70,9 @@ export const serialize = <T>(
         }
     }
 
-    const embeddedProperties: Map<string, { embeddedType: { new (): any }; options: AiXpandDecoratorOptions }> =
+    const embeddedProperties: Map<string, { embeddedType: { new (): any }; options: BindingOptions }> =
         Reflect.getMetadata('embeddedProperties', instance.constructor) || new Map();
-    const propertyMappings: Map<string, { propertyName: string; options: AiXpandDecoratorOptions }> =
+    const propertyMappings: Map<string, { propertyName: string; options: BindingOptions }> =
         Reflect.getMetadata('propertyMappings', instance.constructor) || new Map();
 
     propertyMappings.forEach((property, key) => {

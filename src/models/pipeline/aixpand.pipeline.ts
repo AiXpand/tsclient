@@ -10,7 +10,7 @@ export class AiXpandPipeline {
 
     private readonly dct: AiXpandDataCaptureThread<any>;
 
-    private node: string;
+    private readonly node: string;
 
     constructor(dct: AiXpandDataCaptureThread<any> = null, node: string) {
         this.node = node;
@@ -53,13 +53,51 @@ export class AiXpandPipeline {
         return this;
     }
 
+    removePluginInstance(instance: AiXpandPluginInstance<any>): string[] {
+        const affectedPipelines: string[] = [this.dct.id];
+        if (instance.isLinked()) {
+            const mainInstance = instance.getCollectorInstance();
+            if (!mainInstance) {
+                // removing main instance; recalculate linking map
+                const linkedInstances = instance.getLinkedInstances();
+                linkedInstances[0].setCollectorInstance(null);
+                affectedPipelines.push(linkedInstances[0].getStreamId());
+
+                for (let i = 1; i < linkedInstances.length; i++) {
+                    linkedInstances[0].link(linkedInstances[i]);
+                    affectedPipelines.push(linkedInstances[i].getStreamId());
+                }
+            } else {
+                // removing linked instance
+                mainInstance.unlink(instance);
+                affectedPipelines.push(mainInstance.getStreamId());
+            }
+        }
+
+        this.removeFromInstanceArray(instance);
+
+        instance = null;
+
+        return affectedPipelines;
+    }
+
     compile(session: string | null = null) {
         const instancesBySignature = this.instances.reduce((collection, plugin) => {
             if (!collection[plugin.signature]) {
                 collection[plugin.signature] = [];
             }
 
-            const config = serialize(plugin.config, null, plugin.getTags());
+            let linkInfo = null;
+            if (plugin.getDecoratorMetadata().options.linkable) {
+                linkInfo = {
+                    links: {
+                        instances: plugin.getLinkedInstances(),
+                        collector: plugin.getCollectorInstance(),
+                    },
+                };
+            }
+
+            const config = serialize(plugin.config, null, plugin.getTags(), linkInfo);
             collection[plugin.signature].push({
                 ...config,
                 INSTANCE_ID: plugin.id,
@@ -89,5 +127,15 @@ export class AiXpandPipeline {
             PAYLOAD: this.getDataCaptureThread().id,
             ACTION: AiXpandCommandAction.ARCHIVE_CONFIG,
         };
+    }
+
+    private removeFromInstanceArray(toRemove: AiXpandPluginInstance<any>) {
+        for (let i = 0; i < this.instances.length; i++) {
+            const instance = this.instances[i];
+            if (instance.id === toRemove.id) {
+                this.instances.splice(i, 1);
+                break;
+            }
+        }
     }
 }

@@ -1,4 +1,4 @@
-export * from './aixpand.decorator.options';
+export * from './binding.options';
 export * from './bind.decorator';
 export * from './data.capture.thread.config.decorator';
 export * from './data.capture.thread.decorator';

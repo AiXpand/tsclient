@@ -1,12 +1,12 @@
 import 'reflect-metadata';
-import { AiXpandDecoratorOptions } from '../decorators';
+import { BindingOptions } from '../decorators';
 
 export const deserialize = <T>(object: any, targetType: { new (): T }): T => {
     const instance = new targetType();
 
-    const embeddedProperties: Map<string, { embeddedType: { new (): any }; options: AiXpandDecoratorOptions }> =
+    const embeddedProperties: Map<string, { embeddedType: { new (): any }; options: BindingOptions }> =
         Reflect.getMetadata('embeddedProperties', targetType) || new Map();
-    const propertyMappings: Map<string, { propertyName: string; options: AiXpandDecoratorOptions }> =
+    const propertyMappings: Map<string, { propertyName: string; options: BindingOptions }> =
         Reflect.getMetadata('propertyMappings', targetType) || new Map();
 
     propertyMappings.forEach((property, key) => {

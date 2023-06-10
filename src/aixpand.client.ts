@@ -632,6 +632,7 @@ export class AiXpandClient extends EventEmitter2 {
 
     /**
      * Internal method for splitting and filtering the MQTT input event stream.
+     *
      * @private
      */
     private makeStreams() {
@@ -725,49 +726,10 @@ export class AiXpandClient extends EventEmitter2 {
      */
     private heartbeatProcessor(message: AiXPMessage<AiXPHeartbeatData>) {
         this.initializeValuesForHost(message.sender.host);
-
         this.markAsSeen(message.sender.host, this.options.offlineTimeout);
-
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        // @ts-ignore
-        Object.keys(message.data.ee.dataCaptureThreads).forEach((streamId) => {
-            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-            // @ts-ignore
-            const hbDCTConfig = message.data.ee.dataCaptureThreads[streamId];
-            if (hbDCTConfig.getInitiator() !== this.initiator) {
-                return;
-            }
-
-            // Update the network DCT dictionary
-            if (!this.dataCaptureThreads[message.sender.host][`${streamId}`]) {
-                this.dataCaptureThreads[message.sender.host][`${streamId}`] = hbDCTConfig;
-            } else {
-                try {
-                    this.dataCaptureThreads[message.sender.host][`${streamId}`].update(hbDCTConfig);
-                } catch (e) {
-                    this.emit(AiXpandClientEvent.AIXP_EXCEPTION, e);
-                }
-            }
-
-            // Update the network pipelines' DCTs
-            const dct = this.dataCaptureThreads[message.sender.host][`${streamId}`];
-            if (!this.pipelines[message.sender.host][`${streamId}`]) {
-                this.pipelines[message.sender.host][`${streamId}`] = new AiXpandPipeline(dct, message.sender.host);
-            } else {
-                this.pipelines[message.sender.host][`${streamId}`].getDataCaptureThread().update(dct);
-            }
-        });
-
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        // @ts-ignore
-        message.data.ee.activePlugins.forEach((plugin: AiXpandPluginInstance<any>) => {
-            if (!this.pipelines[message.sender.host][`${plugin.getStreamId()}`]) {
-                console.log(`Attempted to attach plugin on non-existing stream: ${plugin.getStreamId()}`);
-                return;
-            }
-
-            this.pipelines[message.sender.host][`${plugin.getStreamId()}`].attachPluginInstance(plugin);
-        });
+        this.hydrateDCTs(message);
+        this.hydrateInstances(message);
+        this.linkInstances(message);
 
         this.emit(AiXpandClientEvent.AIXP_RECEIVED_HEARTBEAT_FROM_ENGINE, {
             executionEngine: message.sender.host,
@@ -870,6 +832,83 @@ export class AiXpandClient extends EventEmitter2 {
         }
     }
 
+    /**
+     * Private method for hydrating the DCT information from a heartbeat message.
+     *
+     * @param message
+     * @private
+     */
+    private hydrateDCTs(message: AiXPMessage<AiXPHeartbeatData>) {
+        Object.keys(message.data.ee.dataCaptureThreads).forEach((streamId) => {
+            const hbDCTConfig = message.data.ee.dataCaptureThreads[streamId];
+            if (hbDCTConfig.getInitiator() !== this.initiator) {
+                return;
+            }
+
+            // Update the network DCT dictionary
+            if (!this.dataCaptureThreads[message.sender.host][`${streamId}`]) {
+                this.dataCaptureThreads[message.sender.host][`${streamId}`] = hbDCTConfig;
+            } else {
+                try {
+                    this.dataCaptureThreads[message.sender.host][`${streamId}`].update(hbDCTConfig);
+                } catch (e) {
+                    this.emit(AiXpandClientEvent.AIXP_EXCEPTION, e);
+                }
+            }
+
+            // Update the network pipelines' DCTs
+            const dct = this.dataCaptureThreads[message.sender.host][`${streamId}`];
+            if (!this.pipelines[message.sender.host][`${streamId}`]) {
+                this.pipelines[message.sender.host][`${streamId}`] = new AiXpandPipeline(dct, message.sender.host);
+            } else {
+                this.pipelines[message.sender.host][`${streamId}`].getDataCaptureThread().update(dct);
+            }
+        });
+    }
+
+    /**
+     * Private method for hydrating the instances from the heartbeat message.
+     *
+     * @param message
+     * @private
+     */
+    private hydrateInstances(message: AiXPMessage<AiXPHeartbeatData>) {
+        message.data.ee.activePlugins.forEach((plugin: AiXpandPluginInstance<any>) => {
+            if (!this.pipelines[message.sender.host][`${plugin.getStreamId()}`]) {
+                console.log(`Attempted to attach plugin on non-existing stream: ${plugin.getStreamId()}`);
+                return;
+            }
+
+            this.pipelines[message.sender.host][`${plugin.getStreamId()}`].attachPluginInstance(plugin);
+        });
+    }
+
+    /**
+     * Private method for linking existing instances based on heartbeat information.
+     *
+     * @param message
+     * @private
+     */
+    private linkInstances(message: AiXPMessage<AiXPHeartbeatData>) {
+        Object.keys(message.data.ee.links).forEach((mainInstanceId) => {
+            const linkInfo = message.data.ee.links[mainInstanceId];
+            const mainInstance =
+                this.pipelines[message.sender.host][linkInfo.ownPipeline].getPluginInstance(mainInstanceId);
+            linkInfo.instances.forEach((linkedInstanceInfo) => {
+                const linkedInstance = this.pipelines[message.sender.host][linkedInstanceInfo[0]].getPluginInstance(
+                    linkedInstanceInfo[1],
+                );
+                mainInstance.link(linkedInstance);
+            });
+        });
+    }
+
+    /**
+     * Private method for building the message context.
+     *
+     * @param message
+     * @private
+     */
     private buildContext(message) {
         return <AiXpandClientEventContext>{
             path: message.path,

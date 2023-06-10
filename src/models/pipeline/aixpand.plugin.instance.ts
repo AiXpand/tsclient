@@ -1,5 +1,6 @@
 import { REST_CUSTOM_EXEC_SIGNATURE } from '../../abstract.rest.custom.exec.plugin';
 import { CallbackFunction } from '../callback.function.type';
+import { PluginInstanceOptions } from '../../decorators';
 
 export type PluginInstanceTimers = {
     init?: Date | null;
@@ -21,6 +22,8 @@ export class AiXpandPluginInstance<T> {
     public frequency: number | null = null;
     private readonly tags: Map<string, string>;
     private callback: CallbackFunction = null;
+    private linkedInstances: AiXpandPluginInstance<T>[] = [];
+    private collectorInstance: AiXpandPluginInstance<T> = null;
 
     constructor(id: string, config: T, callback: CallbackFunction = null) {
         if (!config) {
@@ -36,6 +39,66 @@ export class AiXpandPluginInstance<T> {
         this.config = config;
         this.tags = new Map<string, string>();
         this.callback = callback;
+    }
+
+    getDecoratorMetadata() {
+        return {
+            options: <PluginInstanceOptions>Reflect.getMetadata('plugin-instance-options', this.config.constructor),
+            signature: this.signature,
+        };
+    }
+
+    getCollectorInstance() {
+        return this.collectorInstance;
+    }
+
+    setCollectorInstance(instance: AiXpandPluginInstance<T> | null) {
+        this.collectorInstance = instance;
+
+        return this;
+    }
+
+    isLinked() {
+        return (
+            this.getDecoratorMetadata().options.linkable &&
+            (this.linkedInstances.length > 0 || this.collectorInstance !== null)
+        );
+    }
+
+    unlink(linkedInstance: AiXpandPluginInstance<T>) {
+        linkedInstance.setCollectorInstance(null);
+
+        for (let i = 0; i < this.linkedInstances.length; i++) {
+            if (
+                this.linkedInstances[i].getStreamId() === linkedInstance.getStreamId() &&
+                this.linkedInstances[i].id === linkedInstance.id
+            ) {
+                this.linkedInstances.splice(i, 1);
+                break;
+            }
+        }
+
+        return this;
+    }
+
+    link(linkedInstance: AiXpandPluginInstance<T>) {
+        const targetMetadata = linkedInstance.getDecoratorMetadata();
+        const thisMetadata = this.getDecoratorMetadata();
+
+        if (
+            targetMetadata.signature === thisMetadata.signature &&
+            targetMetadata.options.linkable &&
+            thisMetadata.options.linkable
+        ) {
+            this.linkedInstances.push(linkedInstance);
+            linkedInstance.setCollectorInstance(this);
+        }
+
+        return this;
+    }
+
+    getLinkedInstances(): AiXpandPluginInstance<T>[] {
+        return this.linkedInstances;
     }
 
     removeTag(key): AiXpandPluginInstance<T> {

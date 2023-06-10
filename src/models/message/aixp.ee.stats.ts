@@ -31,4 +31,7 @@ export class AiXPEEStats {
 
     @IsOptional()
     activePlugins: AiXpandPluginInstance<any>[];
+
+    @IsOptional()
+    links: any;
 }
