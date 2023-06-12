@@ -2,7 +2,7 @@ import 'reflect-metadata';
 import { EventEmitter2 } from 'eventemitter2';
 import * as mqtt from 'mqtt';
 import { MqttClient } from 'mqtt';
-import { filter, fromEvent, map, Observable, partition } from 'rxjs';
+import { concatMap, filter, fromEvent, map, Observable, partition } from 'rxjs';
 import { plainToInstance } from 'class-transformer';
 import {
     AiXpandClientEvent,
@@ -74,6 +74,11 @@ export class AiXpandClient extends EventEmitter2 {
      */
     private readonly initiator: string;
 
+    /**
+     * The MQTT connection information
+     *
+     * @private
+     */
     private mqttOptions: MqttOptions;
 
     /**
@@ -254,10 +259,18 @@ export class AiXpandClient extends EventEmitter2 {
         this.mqttOptions = options.mqtt;
     }
 
+    /**
+     * This method returns the initiator name used for the connection.
+     *
+     * @return initiator name
+     */
     getName(): string {
         return this.initiator;
     }
 
+    /**
+     * This method connects the client to the network and attaches all the necessary callbacks on the network streams.
+     */
     boot() {
         this.connectToMqtt(this.mqttOptions);
         this.makeStreams();
@@ -294,6 +307,9 @@ export class AiXpandClient extends EventEmitter2 {
         });
     }
 
+    /**
+     * This method gracefully shuts down the client, removing all the callbacks and clearing the memory.
+     */
     shutdown() {
         Object.keys(this.fleet).forEach((engine) => {
             this.deregisterExecutionEngine(engine);
@@ -380,6 +396,36 @@ export class AiXpandClient extends EventEmitter2 {
         }
 
         return;
+    }
+
+    restartExecutionEngine(engine: string) {
+        if (!this.fleet[engine]) {
+            this.emit(AiXpandClientEvent.AIXP_EXCEPTION, {
+                error: true,
+                message: `Cannot restart an Execution Engine not in your fleet: "${engine}"`,
+            });
+        }
+
+        const message = {
+            ACTION: 'RESTART',
+        };
+
+        return this.publish(engine, message);
+    }
+
+    shutdownExecutionEngine(engine: string) {
+        if (!this.fleet[engine]) {
+            this.emit(AiXpandClientEvent.AIXP_EXCEPTION, {
+                error: true,
+                message: `Cannot shutdown an Execution Engine not in your fleet: "${engine}"`,
+            });
+        }
+
+        const message = {
+            ACTION: 'STOP',
+        };
+
+        return this.publish(engine, message);
     }
 
     /**
@@ -665,11 +711,11 @@ export class AiXpandClient extends EventEmitter2 {
                 }),
             )
             .pipe(
-                map((message): AiXPMessage<any> => {
+                concatMap(async (message): Promise<AiXPMessage<any>> => {
                     // transform message to AiXPMessage
                     return plainToInstance(
                         AiXPMessage,
-                        transformer(message, this.registeredPlugins, this.registeredDCTs),
+                        await transformer(message, this.registeredPlugins, this.registeredDCTs),
                     );
                 }),
             );

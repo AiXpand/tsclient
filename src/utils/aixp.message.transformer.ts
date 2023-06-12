@@ -17,11 +17,11 @@ import {
 import { deserialize } from './aixp.deserializer';
 import { REST_CUSTOM_EXEC_SIGNATURE } from '../abstract.rest.custom.exec.plugin';
 
-export const transformer = (
+export const transformer = async (
     rawMessage,
     plugins: Dictionary<PluginRegistration>,
     registeredDCTs: Dictionary<any>,
-): AiXPMessage<any> => {
+): Promise<AiXPMessage<any>> => {
     const message: AiXPMessage<any> = {
         path: rawMessage.EE_PAYLOAD_PATH,
         id: rawMessage.messageID,
@@ -267,6 +267,7 @@ const metadataTransformer = (rawMessage): AiXPMessageMetadata => {
         },
         captureMetadata: null,
         pluginMetadata: null,
+        timezone: rawMessage.metadata.ee_timezone,
     };
 
     if (![AiXPMessageType.HEARTBEAT, AiXPMessageType.NOTIFICATION].includes(rawMessage.type)) {
