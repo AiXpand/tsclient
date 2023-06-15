@@ -807,7 +807,7 @@ export class AiXpandClient extends EventEmitter2 {
         }
 
         const context = this.buildContext(message);
-        if (context.instance.hasCallback()) {
+        if (context.instance?.hasCallback()) {
             const callback = context.instance.getCallback();
 
             callback(context, null, payload);
@@ -848,7 +848,7 @@ export class AiXpandClient extends EventEmitter2 {
                     }
 
                     const context = this.buildContext(message);
-                    if (context.instance.hasCallback()) {
+                    if (context.instance?.hasCallback()) {
                         const callback = context.instance.getCallback();
 
                         callback(context, message, null);

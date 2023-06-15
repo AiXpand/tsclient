@@ -1,6 +1,7 @@
 import { REST_CUSTOM_EXEC_SIGNATURE } from '../../abstract.rest.custom.exec.plugin';
 import { CallbackFunction } from '../callback.function.type';
 import { PluginInstanceOptions } from '../../decorators';
+import { AiXpandCommandAction } from './aixpand.command';
 
 export type PluginInstanceTimers = {
     init?: Date | null;
@@ -39,6 +40,20 @@ export class AiXpandPluginInstance<T> {
         this.config = config;
         this.tags = new Map<string, string>();
         this.callback = callback;
+    }
+
+    sendCommand(command: any) {
+        return {
+            PAYLOAD: {
+                NAME: this.streamId,
+                INSTANCE_ID: this.id,
+                SIGNATURE: this.signature,
+                INSTANCE_CONFIG: {
+                    INSTANCE_COMMAND: command,
+                },
+            },
+            ACTION: AiXpandCommandAction.UPDATE_PIPELINE_INSTANCE,
+        };
     }
 
     getDecoratorMetadata() {
