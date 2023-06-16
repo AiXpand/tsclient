@@ -98,8 +98,10 @@ export class AiXpandPipeline {
             }
 
             const config = serialize(plugin.config, null, plugin.getTags(), linkInfo);
+            const alerter = serialize(plugin.getAlerter());
             collection[plugin.signature].push({
                 ...config,
+                ...alerter,
                 INSTANCE_ID: plugin.id,
             });
 

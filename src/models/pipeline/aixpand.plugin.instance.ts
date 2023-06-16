@@ -2,6 +2,7 @@ import { REST_CUSTOM_EXEC_SIGNATURE } from '../../abstract.rest.custom.exec.plug
 import { CallbackFunction } from '../callback.function.type';
 import { PluginInstanceOptions } from '../../decorators';
 import { AiXpandCommandAction } from './aixpand.command';
+import { AixpandAlerter } from '../../aixpand.alerter';
 
 export type PluginInstanceTimers = {
     init?: Date | null;
@@ -18,6 +19,7 @@ export class AiXpandPluginInstance<T> {
     public readonly signature: string;
     private streamId: string = null;
     public config: T;
+    public alerter: AixpandAlerter;
     public timers: PluginInstanceTimers = null;
     public outsideWorkingHours = false;
     public frequency: number | null = null;
@@ -26,7 +28,7 @@ export class AiXpandPluginInstance<T> {
     private linkedInstances: AiXpandPluginInstance<T>[] = [];
     private collectorInstance: AiXpandPluginInstance<T> = null;
 
-    constructor(id: string, config: T, callback: CallbackFunction = null) {
+    constructor(id: string, config: T, callback: CallbackFunction = null, alerter?: AixpandAlerter) {
         if (!config) {
             return;
         } // TODO: should throw
@@ -37,7 +39,12 @@ export class AiXpandPluginInstance<T> {
             this.signature = Reflect.getMetadata('signature', config.constructor);
         }
 
+        // if (Reflect.hasMetadata('plugin-instance-alertable', config.constructor) && !alerter) {
+        //     throw new Error(`Alertable plugin instance ${id} does not have an alerter attached.`);
+        // }
+
         this.config = config;
+        this.alerter = alerter;
         this.tags = new Map<string, string>();
         this.callback = callback;
     }
@@ -178,5 +185,9 @@ export class AiXpandPluginInstance<T> {
         this.callback = null;
 
         return this;
+    }
+
+    getAlerter(): AixpandAlerter {
+        return this.alerter;
     }
 }

@@ -234,7 +234,7 @@ export class AiXpandClient extends EventEmitter2 {
             }
         }
 
-        if (options.options.offlineTimeout) {
+        if (options?.options?.offlineTimeout) {
             this.options.offlineTimeout = options.options.offlineTimeout;
         }
 

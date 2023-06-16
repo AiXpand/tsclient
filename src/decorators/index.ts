@@ -7,3 +7,5 @@ export * from './embedded.decorator';
 export * from './pipeline.decorator';
 export * from './plugin.instance.decorator';
 export * from './plugin.payload.decorator';
+export * from './alertable.decorator';
+export * from './alerter.decorator';
