@@ -772,7 +772,10 @@ export class AiXpandClient extends EventEmitter2 {
      */
     private heartbeatProcessor(message: AiXPMessage<AiXPHeartbeatData>) {
         this.initializeValuesForHost(message.sender.host);
-        this.markAsSeen(message.sender.host, this.options.offlineTimeout);
+
+        const timeout = message.data.ee.heartbeatInterval ?? this.options.offlineTimeout;
+
+        this.markAsSeen(message.sender.host, timeout);
         this.hydrateDCTs(message);
         this.hydrateInstances(message);
         this.linkInstances(message);
@@ -996,7 +999,7 @@ export class AiXpandClient extends EventEmitter2 {
                 this.emit(AiXpandClientEvent.AIXP_ENGINE_OFFLINE, {
                     executionEngine: engine,
                 });
-            }, timeout * 1000),
+            }, (timeout + 1) * 1000), // adding one second to account for possible network delays
             timeout: timeout,
         };
     }

@@ -4,6 +4,7 @@ import {
     AiXpandDCTRate,
     AiXpandDCTStats,
     AiXpandPluginInstance,
+    AiXPEEStats,
     AiXPHeartbeatData,
     AiXPMessage,
     AiXPMessageIdentifiers,
@@ -173,7 +174,8 @@ const heartbeatTransformer = (
                   }))
                 : [],
         },
-        ee: {
+        ee: <AiXPEEStats>{
+            heartbeatInterval: rawMessage.metadata.ee_hb_time,
             version: {
                 full: rawMessage.metadata.version,
                 engine: rawMessage.version,
