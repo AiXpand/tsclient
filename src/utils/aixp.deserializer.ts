@@ -1,7 +1,7 @@
 import 'reflect-metadata';
 import { BindingOptions } from '../decorators';
 
-export const deserialize = <T>(object: any, targetType: { new (): T }): T => {
+export const deserialize = <T extends object>(object: any, targetType: { new (): T }): T => {
     const instance = new targetType();
 
     const embeddedProperties: Map<string, { embeddedType: { new (): any }; options: BindingOptions }> =

@@ -1,8 +1,9 @@
 import * as zlib from 'node:zlib';
 import * as util from 'node:util';
+import { Buffer } from 'node:buffer';
 
 /*
-THIS IS A PSEUDO PY EXAMPLE:
+THIS IS A PSEUDOPY EXAMPLE:
 
 const pseudopy = `img = plugin.dataapi_image()
 if img is not None:
