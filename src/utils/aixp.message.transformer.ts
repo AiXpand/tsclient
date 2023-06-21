@@ -42,11 +42,7 @@ export const transformer = async (
             instance: rawMessage.sender.instanceId,
             host: rawMessage.sender.hostId,
         },
-        time: {
-            device: rawMessage.time.deviceTime !== '' ? rawMessage.time.deviceTime : null,
-            host: rawMessage.time.hostTime !== '' ? rawMessage.time.hostTime : null,
-            internet: rawMessage.time.internetTime !== '' ? rawMessage.time.internetTime : null,
-        },
+        time: {},
         demoMode: rawMessage.demoMode,
         format: rawMessage.EE_FORMATTER,
 
@@ -57,12 +53,69 @@ export const transformer = async (
 
     switch (message.type) {
         case AiXPMessageType.HEARTBEAT:
+            message.time = {
+                device:
+                    rawMessage.time.deviceTime !== ''
+                        ? new Date(`${rawMessage.time.deviceTime} ${rawMessage.metadata.ee_timezone}`)
+                        : null,
+                host:
+                    rawMessage.time.hostTime !== ''
+                        ? new Date(`${rawMessage.time.hostTime} ${rawMessage.metadata.ee_timezone}`)
+                        : null,
+                internet:
+                    rawMessage.time.internetTime !== ''
+                        ? new Date(`${rawMessage.time.internetTime} ${rawMessage.metadata.ee_timezone}`)
+                        : null,
+                timezone: {
+                    utc: rawMessage.metadata.ee_timezone,
+                    name: rawMessage.metadata.ee_tz,
+                },
+            };
+
             message.data = <AiXPHeartbeatData>heartbeatTransformer(rawMessage, plugins, registeredDCTs);
             break;
         case AiXPMessageType.NOTIFICATION:
+            message.time = {
+                device:
+                    rawMessage.time.deviceTime !== ''
+                        ? new Date(`${rawMessage.time.deviceTime} ${rawMessage.metadata.ee_timezone}`)
+                        : null,
+                host:
+                    rawMessage.time.hostTime !== ''
+                        ? new Date(`${rawMessage.time.hostTime} ${rawMessage.metadata.ee_timezone}`)
+                        : null,
+                internet:
+                    rawMessage.time.internetTime !== ''
+                        ? new Date(`${rawMessage.time.internetTime} ${rawMessage.metadata.ee_timezone}`)
+                        : null,
+                timezone: {
+                    utc: rawMessage.metadata.ee_timezone,
+                    name: rawMessage.metadata.ee_tz,
+                },
+            };
+
             message.data = <AiXPNotificationData>notificationTransformer(rawMessage);
             break;
         default:
+            message.time = {
+                device:
+                    rawMessage.time.deviceTime !== ''
+                        ? new Date(`${rawMessage.time.deviceTime} ${rawMessage.data.specificValue.ee_timezone}`)
+                        : null,
+                host:
+                    rawMessage.time.hostTime !== ''
+                        ? new Date(`${rawMessage.time.hostTime} ${rawMessage.data.specificValue.ee_timezone}`)
+                        : null,
+                internet:
+                    rawMessage.time.internetTime !== ''
+                        ? new Date(`${rawMessage.time.internetTime} ${rawMessage.data.specificValue.ee_timezone}`)
+                        : null,
+                timezone: {
+                    utc: rawMessage.data.specificValue.ee_timezone,
+                    name: rawMessage.data.specificValue.ee_tz,
+                },
+            };
+
             message.data = <AiXPPayloadData>payloadTransformer(rawMessage);
     }
 
@@ -278,7 +331,6 @@ const metadataTransformer = (rawMessage): AiXPMessageMetadata => {
         },
         captureMetadata: null,
         pluginMetadata: null,
-        timezone: rawMessage.metadata.ee_timezone,
     };
 
     if (![AiXPMessageType.HEARTBEAT, AiXPMessageType.NOTIFICATION].includes(rawMessage.type)) {
