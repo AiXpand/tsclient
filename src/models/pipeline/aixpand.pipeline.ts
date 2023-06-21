@@ -115,6 +115,20 @@ export class AiXpandPipeline {
         };
     }
 
+    updateInstance(instance: AiXpandPluginInstance<any>) {
+        const instanceConfig = serialize(instance.getConfig(), null, null, null, instance.getConfig().getChangeset());
+
+        return {
+            PAYLOAD: {
+                NAME: instance.getStreamId(),
+                INSTANCE_ID: instance.id,
+                SIGNATURE: instance.signature,
+                INSTANCE_CONFIG: instanceConfig,
+            },
+            ACTION: AiXpandCommandAction.UPDATE_PIPELINE_INSTANCE,
+        };
+    }
+
     deploy(session: string | null = null) {
         return {
             PAYLOAD: this.compile(session),

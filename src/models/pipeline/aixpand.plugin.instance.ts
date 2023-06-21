@@ -2,6 +2,7 @@ import { REST_CUSTOM_EXEC_SIGNATURE } from '../../abstract.rest.custom.exec.plug
 import { CallbackFunction } from '../callback.function.type';
 import { PluginInstanceOptions } from '../../decorators';
 import { AiXpandCommandAction } from './aixpand.command';
+import { createChangeTrackingProxy } from '../../utils/aixp.track.changes.proxies';
 
 export type PluginInstanceTimers = {
     init?: Date | null;
@@ -13,7 +14,7 @@ export type PluginInstanceTimers = {
     };
 };
 
-export class AiXpandPluginInstance<T> {
+export class AiXpandPluginInstance<T extends object> {
     public readonly id: string;
     public readonly signature: string;
     private streamId: string = null;
@@ -37,7 +38,7 @@ export class AiXpandPluginInstance<T> {
             this.signature = Reflect.getMetadata('signature', config.constructor);
         }
 
-        this.config = config;
+        this.updateConfig(config);
         this.tags = new Map<string, string>();
         this.callback = callback;
     }
@@ -132,12 +133,12 @@ export class AiXpandPluginInstance<T> {
         return this.tags;
     }
 
-    getConfig(): T {
+    getConfig() {
         return this.config;
     }
 
     updateConfig(config: T) {
-        this.config = config;
+        this.config = createChangeTrackingProxy(config);
 
         return this;
     }

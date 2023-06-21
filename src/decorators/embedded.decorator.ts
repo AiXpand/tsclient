@@ -5,6 +5,7 @@ import { reservedPropertyNames } from './bind.decorator';
 const defaultOptions: BindingOptions = {
     isArray: false,
     nullable: false,
+    alwaysSerialize: false,
 };
 
 export const Embedded = (

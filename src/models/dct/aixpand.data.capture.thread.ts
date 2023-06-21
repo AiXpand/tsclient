@@ -8,7 +8,7 @@ import { DataCaptureThread } from '../../decorators';
  * the acquisition of data inside an AI pipeline.
  */
 @DataCaptureThread()
-export class AiXpandDataCaptureThread<T> {
+export class AiXpandDataCaptureThread<T extends object> {
     /**
      * The DCT id
      */

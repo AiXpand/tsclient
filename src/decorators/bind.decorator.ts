@@ -4,9 +4,10 @@ import { BindingOptions } from './binding.options';
 const defaultOptions: BindingOptions = {
     isArray: false,
     nullable: false,
+    alwaysSerialize: false,
 };
 
-export const reservedPropertyNames = ['ID_TAGS', 'LINKED_INSTANCES'];
+export const reservedPropertyNames = ['ID_TAGS', 'LINKED_INSTANCES', 'SINGLE_INSTANCE'];
 
 export const Bind = (configPropertyName: string, options: BindingOptions = {}): PropertyDecorator => {
     options = { ...defaultOptions, ...options };
