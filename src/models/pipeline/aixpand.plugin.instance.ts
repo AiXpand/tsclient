@@ -2,6 +2,7 @@ import { REST_CUSTOM_EXEC_SIGNATURE } from '../../abstract.rest.custom.exec.plug
 import { CallbackFunction } from '../callback.function.type';
 import { PluginInstanceOptions } from '../../decorators';
 import { AiXpandCommandAction } from './aixpand.command';
+import { createChangeTrackingProxy } from '../../utils/aixp.track.changes.proxies';
 import { AixpandAlerter } from '../../aixpand.alerter';
 
 export type PluginInstanceTimers = {
@@ -14,7 +15,7 @@ export type PluginInstanceTimers = {
     };
 };
 
-export class AiXpandPluginInstance<T> {
+export class AiXpandPluginInstance<T extends object> {
     public readonly id: string;
     public readonly signature: string;
     private streamId: string = null;
@@ -43,7 +44,7 @@ export class AiXpandPluginInstance<T> {
         //     throw new Error(`Alertable plugin instance ${id} does not have an alerter attached.`);
         // }
 
-        this.config = config;
+        this.updateConfig(config);
         this.alerter = alerter;
         this.tags = new Map<string, string>();
         this.callback = callback;
@@ -139,12 +140,12 @@ export class AiXpandPluginInstance<T> {
         return this.tags;
     }
 
-    getConfig(): T {
+    getConfig() {
         return this.config;
     }
 
     updateConfig(config: T) {
-        this.config = config;
+        this.config = createChangeTrackingProxy(config);
 
         return this;
     }

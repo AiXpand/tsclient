@@ -17,12 +17,20 @@ import {
 import { deserialize } from './aixp.deserializer';
 import { REST_CUSTOM_EXEC_SIGNATURE } from '../abstract.rest.custom.exec.plugin';
 import { AixpandAlerter } from '../aixpand.alerter';
+import { decode } from './aixp.pseudopy.helpers';
 
 export const transformer = async (
     rawMessage,
     plugins: Dictionary<PluginRegistration>,
     registeredDCTs: Dictionary<any>,
 ): Promise<AiXPMessage<any>> => {
+    if (rawMessage.type == AiXPMessageType.HEARTBEAT && rawMessage.metadata.encoded_data !== undefined) {
+        const decoded = JSON.parse(await decode(rawMessage.metadata.encoded_data));
+        Object.keys(decoded).forEach((key) => {
+            rawMessage.metadata[key.toLowerCase()] = decoded[key];
+        });
+    }
+
     const message: AiXPMessage<any> = {
         path: rawMessage.EE_PAYLOAD_PATH,
         id: rawMessage.messageID,

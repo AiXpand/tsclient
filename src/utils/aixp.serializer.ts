@@ -3,18 +3,19 @@ import { REST_CUSTOM_EXEC_SIGNATURE } from '../abstract.rest.custom.exec.plugin'
 import { BindingOptions } from '../decorators';
 import { AiXpandPluginInstance } from '../models';
 
-export type LinkInfo<T> = {
+export type LinkInfo<T extends object> = {
     links: {
         instances: AiXpandPluginInstance<T>[];
         collector: AiXpandPluginInstance<T>;
     };
 };
 
-export const serialize = <T>(
+export const serialize = <T extends object>(
     instance: T,
     signature = null,
     tags: Map<string, string> = new Map<string, string>(),
     linkInfo: null | LinkInfo<T> = null,
+    changeset = null,
 ): any => {
     if (
         !(
@@ -28,6 +29,10 @@ export const serialize = <T>(
             'Only Plugin Instances, Embedded Configs, Alerter Configs or Data Capture Threads can be serialized.',
         );
         return;
+    }
+
+    if (tags === null) {
+        tags = new Map<string, string>();
     }
 
     const serializedObject: any = {};
@@ -81,16 +86,29 @@ export const serialize = <T>(
         Reflect.getMetadata('propertyMappings', instance.constructor) || new Map();
 
     propertyMappings.forEach((property, key) => {
-        if (instance.hasOwnProperty(key)) {
+        if (
+            instance.hasOwnProperty(key) &&
+            (!changeset || changeset[key] !== undefined || property.options.alwaysSerialize)
+        ) {
             if (!instance[key] && property.options.nullable) {
                 return;
             }
 
+            const changesetToPass =
+                changeset == null || property.options.alwaysSerialize === true ? null : changeset[key] ?? {};
             const embeddedConfig = embeddedProperties.get(key);
             if (embeddedConfig?.options.isArray) {
-                serializedObject[property.propertyName] = instance[key].map((item: any) => serialize(item, signature));
+                serializedObject[property.propertyName] = instance[key].map((item: any) =>
+                    serialize(item, signature, null, null, changesetToPass),
+                );
             } else if (embeddedConfig) {
-                serializedObject[property.propertyName] = serialize(instance[key], signature);
+                serializedObject[property.propertyName] = serialize(
+                    instance[key],
+                    signature,
+                    null,
+                    null,
+                    changesetToPass,
+                );
             } else {
                 serializedObject[property.propertyName] = instance[key];
             }
