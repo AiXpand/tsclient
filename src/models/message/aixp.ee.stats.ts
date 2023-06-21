@@ -7,6 +7,10 @@ import { AiXpandDataCaptureThread } from '../dct';
 import { AiXpandPluginInstance } from '../pipeline';
 
 export class AiXPEEStats {
+    @IsOptional()
+    @IsNumber()
+    heartbeatInterval: number;
+
     @ValidateNested()
     @Type(() => AiXPEEVersion)
     version: AiXPEEVersion;
