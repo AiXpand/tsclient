@@ -3,7 +3,7 @@ import { CallbackFunction } from '../callback.function.type';
 import { PluginInstanceOptions } from '../../decorators';
 import { AiXpandCommandAction } from './aixpand.command';
 import { createChangeTrackingProxy } from '../../utils/aixp.track.changes.proxies';
-import { AixpandAlerter } from '../../aixpand.alerter';
+import { AiXpandAlerter } from '../aixpand.alerter';
 
 export type PluginInstanceTimers = {
     init?: Date | null;
@@ -20,7 +20,7 @@ export class AiXpandPluginInstance<T extends object> {
     public readonly signature: string;
     private streamId: string = null;
     public config: T;
-    public alerter: AixpandAlerter;
+    public alerter: AiXpandAlerter;
     public timers: PluginInstanceTimers = null;
     public outsideWorkingHours = false;
     public frequency: number | null = null;
@@ -29,7 +29,7 @@ export class AiXpandPluginInstance<T extends object> {
     private linkedInstances: AiXpandPluginInstance<T>[] = [];
     private collectorInstance: AiXpandPluginInstance<T> = null;
 
-    constructor(id: string, config: T, callback: CallbackFunction = null, alerter?: AixpandAlerter) {
+    constructor(id: string, config: T, callback: CallbackFunction = null, alerter?: AiXpandAlerter) {
         if (!config) {
             return;
         } // TODO: should throw
@@ -150,6 +150,16 @@ export class AiXpandPluginInstance<T extends object> {
         return this;
     }
 
+    getAlerter(): AiXpandAlerter {
+        return this.alerter;
+    }
+
+    updateAlerter(alerter: AiXpandAlerter) {
+        this.alerter = alerter;
+
+        return this;
+    }
+
     updateMetadata(frequency: number = null, outsideWorkingHours = false, timers: PluginInstanceTimers = null) {
         this.frequency = frequency;
         this.timers = timers;
@@ -186,9 +196,5 @@ export class AiXpandPluginInstance<T extends object> {
         this.callback = null;
 
         return this;
-    }
-
-    getAlerter(): AixpandAlerter {
-        return this.alerter;
     }
 }

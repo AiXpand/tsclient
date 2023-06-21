@@ -16,7 +16,7 @@ import {
 } from '../models';
 import { deserialize } from './aixp.deserializer';
 import { REST_CUSTOM_EXEC_SIGNATURE } from '../abstract.rest.custom.exec.plugin';
-import { AixpandAlerter } from '../aixpand.alerter';
+import { AiXpandAlerter } from '../models/aixpand.alerter';
 import { decode } from './aixp.pseudopy.helpers';
 
 export const transformer = async (
@@ -202,7 +202,7 @@ const heartbeatTransformer = (
             rawPluginInfo.INSTANCE_ID,
             deserialize(rawPluginConfig, instanceClass),
             null,
-            deserialize(rawPluginConfig, AixpandAlerter),
+            deserialize(rawPluginConfig, AiXpandAlerter),
         );
 
         if (rawPluginConfig['ID_TAGS']) {

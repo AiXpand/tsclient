@@ -1,8 +1,8 @@
-import { Alerter, Bind } from './decorators';
-import { AiXpandAlertModes } from './models/client/aixpand.alert.modes';
+import { Alerter, Bind } from '../decorators';
+import { AiXpandAlertModes } from './client/aixpand.alert.modes';
 
 @Alerter()
-export class AixpandAlerter {
+export class AiXpandAlerter {
     @Bind('ALERT_DATA_COUNT')
     protected dataCount: number;
 
