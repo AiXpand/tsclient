@@ -3,6 +3,7 @@ import { CallbackFunction } from '../callback.function.type';
 import { PluginInstanceOptions } from '../../decorators';
 import { AiXpandCommandAction } from './aixpand.command';
 import { createChangeTrackingProxy } from '../../utils/aixp.track.changes.proxies';
+import { AiXpandAlerter } from '../aixpand.alerter';
 
 export type PluginInstanceTimers = {
     init?: Date | null;
@@ -19,6 +20,7 @@ export class AiXpandPluginInstance<T extends object> {
     public readonly signature: string;
     private streamId: string = null;
     public config: T;
+    public alerter: AiXpandAlerter;
     public timers: PluginInstanceTimers = null;
     public outsideWorkingHours = false;
     public frequency: number | null = null;
@@ -27,7 +29,7 @@ export class AiXpandPluginInstance<T extends object> {
     private linkedInstances: AiXpandPluginInstance<T>[] = [];
     private collectorInstance: AiXpandPluginInstance<T> = null;
 
-    constructor(id: string, config: T, callback: CallbackFunction = null) {
+    constructor(id: string, config: T, callback: CallbackFunction = null, alerter?: AiXpandAlerter) {
         if (!config) {
             return;
         } // TODO: should throw
@@ -38,7 +40,12 @@ export class AiXpandPluginInstance<T extends object> {
             this.signature = Reflect.getMetadata('signature', config.constructor);
         }
 
+        // if (Reflect.hasMetadata('plugin-instance-alertable', config.constructor) && !alerter) {
+        //     throw new Error(`Alertable plugin instance ${id} does not have an alerter attached.`);
+        // }
+
         this.updateConfig(config);
+        this.alerter = alerter;
         this.tags = new Map<string, string>();
         this.callback = callback;
     }
@@ -139,6 +146,16 @@ export class AiXpandPluginInstance<T extends object> {
 
     updateConfig(config: T) {
         this.config = createChangeTrackingProxy(config);
+
+        return this;
+    }
+
+    getAlerter(): AiXpandAlerter {
+        return this.alerter;
+    }
+
+    updateAlerter(alerter: AiXpandAlerter) {
+        this.alerter = alerter;
 
         return this;
     }

@@ -37,17 +37,18 @@ export class AiXpandPipeline {
         return this.instances.filter((instance) => instance.id === instanceId).pop() ?? null;
     }
 
-    attachPluginInstance(plugin: AiXpandPluginInstance<any>) {
-        const instance = this.getPluginInstance(plugin.id);
+    attachPluginInstance(candidate: AiXpandPluginInstance<any>) {
+        const existingInstance = this.getPluginInstance(candidate.id);
 
-        if (!instance) {
-            plugin.setStreamId(this.dct.id);
+        if (!existingInstance) {
+            candidate.setStreamId(this.dct.id);
 
-            this.instances.push(plugin);
+            this.instances.push(candidate);
         } else {
-            instance
-                .updateConfig(plugin.config)
-                .updateMetadata(plugin.frequency, plugin.outsideWorkingHours, plugin.timers);
+            existingInstance
+                .updateConfig(candidate.getConfig())
+                .updateAlerter(candidate.getAlerter())
+                .updateMetadata(candidate.frequency, candidate.outsideWorkingHours, candidate.timers);
         }
 
         return this;
@@ -98,8 +99,10 @@ export class AiXpandPipeline {
             }
 
             const config = serialize(plugin.config, null, plugin.getTags(), linkInfo);
+            const alerter = serialize(plugin.getAlerter());
             collection[plugin.signature].push({
                 ...config,
+                ...alerter,
                 INSTANCE_ID: plugin.id,
             });
 

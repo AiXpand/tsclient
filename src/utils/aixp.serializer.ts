@@ -21,10 +21,13 @@ export const serialize = <T extends object>(
         !(
             Reflect.hasMetadata('plugin-instance', instance.constructor) ||
             Reflect.hasMetadata('plugin-instance-part', instance.constructor) ||
-            Reflect.hasMetadata('data-capture-thread-config', instance.constructor)
+            Reflect.hasMetadata('data-capture-thread-config', instance.constructor) ||
+            Reflect.hasMetadata('plugin-instance-alerter', instance.constructor)
         )
     ) {
-        console.log('Only Plugin Instances, Embedded Configs or Data Capture Threads can be serialized.');
+        console.log(
+            'Only Plugin Instances, Embedded Configs, Alerter Configs or Data Capture Threads can be serialized.',
+        );
         return;
     }
 
@@ -35,6 +38,8 @@ export const serialize = <T extends object>(
     const serializedObject: any = {};
     const isDataCaptureThread = Reflect.getMetadata('data-capture-thread-config', instance.constructor);
     const isPluginInstance = Reflect.getMetadata('plugin-instance', instance.constructor);
+    const isPluginInstanceAlerter = Reflect.getMetadata('plugin-instance-alerter', instance.constructor);
+
     if (isPluginInstance) {
         signature = Reflect.getMetadata('signature', instance.constructor);
 
@@ -65,7 +70,7 @@ export const serialize = <T extends object>(
                 (instance: AiXpandPluginInstance<T>) => [instance.getStreamId(), instance.id],
             );
         }
-    } else if (!isDataCaptureThread) {
+    } else if (!isDataCaptureThread && !isPluginInstanceAlerter) {
         const partSignatures = Reflect.getMetadata('signatures', instance.constructor);
         if (!partSignatures.includes(signature) && !partSignatures.includes(REST_CUSTOM_EXEC_SIGNATURE)) {
             console.log(
