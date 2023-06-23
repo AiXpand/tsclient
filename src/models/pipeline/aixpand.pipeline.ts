@@ -3,18 +3,42 @@ import { AiXpandPluginInstance } from './aixpand.plugin.instance';
 import { AiXpandDataCaptureThread } from '../dct';
 import { serialize } from '../../utils';
 import { Pipeline } from '../../decorators';
+import { AiXpandClient } from '../../aixpand.client';
 
 @Pipeline()
 export class AiXpandPipeline {
+    /**
+     * The list of instances associated with this pipeline.
+     *
+     * @private
+     */
     private instances: AiXpandPluginInstance<any>[] = [];
 
+    /**
+     * The Data Capture Thread that feeds this pipeline with data.
+     *
+     * @private
+     */
     private readonly dct: AiXpandDataCaptureThread<any>;
 
+    /**
+     * The node this specific pipeline belongs to.
+     *
+     * @private
+     */
     private readonly node: string;
 
-    constructor(dct: AiXpandDataCaptureThread<any> = null, node: string) {
+    /**
+     * Back-reference to the AiXpand Client, for allowing the publishing of instance commands.
+     *
+     * @private
+     */
+    private readonly client: AiXpandClient;
+
+    constructor(dct: AiXpandDataCaptureThread<any> = null, node: string, client: AiXpandClient) {
         this.node = node;
         this.dct = dct;
+        this.client = client;
     }
 
     getInitiator() {
@@ -41,7 +65,7 @@ export class AiXpandPipeline {
         const existingInstance = this.getPluginInstance(candidate.id);
 
         if (!existingInstance) {
-            candidate.setStreamId(this.dct.id);
+            candidate.setStreamId(this.dct.id).setPipeline(this);
 
             this.instances.push(candidate);
         } else {
@@ -82,7 +106,44 @@ export class AiXpandPipeline {
         return affectedPipelines;
     }
 
-    compile(session: string | null = null) {
+    sendInstanceCommand(message: any) {
+        return this.client.publish(this.node, message);
+    }
+
+    updateInstance(instance: AiXpandPluginInstance<any>) {
+        const instanceConfig = serialize(instance.getConfig(), null, null, null, instance.getConfig().getChangeset());
+        const message = {
+            PAYLOAD: {
+                NAME: instance.getStreamId(),
+                INSTANCE_ID: instance.id,
+                SIGNATURE: instance.signature,
+                INSTANCE_CONFIG: instanceConfig,
+            },
+            ACTION: AiXpandCommandAction.UPDATE_PIPELINE_INSTANCE,
+        };
+
+        return this.client.publish(this.node, message);
+    }
+
+    deploy(session: string | null = null) {
+        const message = {
+            PAYLOAD: this.compile(session),
+            ACTION: AiXpandCommandAction.UPDATE_CONFIG,
+        };
+
+        return this.client.publish(this.node, message);
+    }
+
+    close() {
+        const message = {
+            PAYLOAD: this.getDataCaptureThread().id,
+            ACTION: AiXpandCommandAction.ARCHIVE_CONFIG,
+        };
+
+        return this.client.publish(this.node, message);
+    }
+
+    private compile(session: string | null = null) {
         const instancesBySignature = this.instances.reduce((collection, plugin) => {
             if (!collection[plugin.signature]) {
                 collection[plugin.signature] = [];
@@ -115,34 +176,6 @@ export class AiXpandPipeline {
                 INSTANCES: instancesBySignature[signature],
                 SIGNATURE: signature,
             })),
-        };
-    }
-
-    updateInstance(instance: AiXpandPluginInstance<any>) {
-        const instanceConfig = serialize(instance.getConfig(), null, null, null, instance.getConfig().getChangeset());
-
-        return {
-            PAYLOAD: {
-                NAME: instance.getStreamId(),
-                INSTANCE_ID: instance.id,
-                SIGNATURE: instance.signature,
-                INSTANCE_CONFIG: instanceConfig,
-            },
-            ACTION: AiXpandCommandAction.UPDATE_PIPELINE_INSTANCE,
-        };
-    }
-
-    deploy(session: string | null = null) {
-        return {
-            PAYLOAD: this.compile(session),
-            ACTION: AiXpandCommandAction.UPDATE_CONFIG,
-        };
-    }
-
-    close() {
-        return {
-            PAYLOAD: this.getDataCaptureThread().id,
-            ACTION: AiXpandCommandAction.ARCHIVE_CONFIG,
         };
     }
 
