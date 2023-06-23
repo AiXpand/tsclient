@@ -4,6 +4,7 @@ import { PluginInstanceOptions } from '../../decorators';
 import { AiXpandCommandAction } from './aixpand.command';
 import { createChangeTrackingProxy } from '../../utils/aixp.track.changes.proxies';
 import { AiXpandAlerter } from '../aixpand.alerter';
+import { AiXpandPipeline } from './aixpand.pipeline';
 
 export type PluginInstanceTimers = {
     init?: Date | null;
@@ -16,18 +17,88 @@ export type PluginInstanceTimers = {
 };
 
 export class AiXpandPluginInstance<T extends object> {
+    /**
+     * The instance id.
+     *
+     * @public string id
+     */
     public readonly id: string;
+
+    /**
+     * The instance signature.
+     *
+     * @public string signature
+     */
     public readonly signature: string;
+
+    /**
+     * The ID of the pipeline (DCT that feeds the pipeline).
+     *
+     * @private
+     */
     private streamId: string = null;
+
+    /**
+     * The instance config.
+     */
     public config: T;
+
+    /**
+     * The alerter parameters.
+     */
     public alerter: AiXpandAlerter;
+
+    /**
+     * Plugin timers that measure different aspects of this specific instance.
+     */
     public timers: PluginInstanceTimers = null;
+
+    /**
+     * Flag signaling whether this specific plugin instance is outside working hours.
+     */
     public outsideWorkingHours = false;
+
+    /**
+     * The frequency with which this instance receives information.
+     */
     public frequency: number | null = null;
+
+    /**
+     * Instance Tags.
+     *
+     * @private
+     */
     private readonly tags: Map<string, string>;
+
+    /**
+     * Instance callback. Whenever a specific callback is set for an instance, the pipeline response
+     * will be directed to that callback instead of being bubbled as a client event.
+     *
+     * @private
+     */
     private callback: CallbackFunction = null;
+
+    /**
+     * Linked instances. When an instance is part of a group of instances, the linking information
+     * is stored in this property.
+     *
+     * @private
+     */
     private linkedInstances: AiXpandPluginInstance<T>[] = [];
+
+    /**
+     * The instance that collects this instance's payloads whenever this instance belongs to a group.
+     *
+     * @private
+     */
     private collectorInstance: AiXpandPluginInstance<T> = null;
+
+    /**
+     * Back-reference to the AiXpand Pipeline, for allowing the publishing of instance commands.
+     *
+     * @private
+     */
+    private pipeline: AiXpandPipeline;
 
     constructor(id: string, config: T, callback: CallbackFunction = null, alerter?: AiXpandAlerter) {
         if (!config) {
@@ -51,7 +122,7 @@ export class AiXpandPluginInstance<T extends object> {
     }
 
     sendCommand(command: any) {
-        return {
+        const message = {
             PAYLOAD: {
                 NAME: this.streamId,
                 INSTANCE_ID: this.id,
@@ -62,6 +133,8 @@ export class AiXpandPluginInstance<T extends object> {
             },
             ACTION: AiXpandCommandAction.UPDATE_PIPELINE_INSTANCE,
         };
+
+        return this.pipeline.sendInstanceCommand(message);
     }
 
     getDecoratorMetadata() {
@@ -176,6 +249,12 @@ export class AiXpandPluginInstance<T extends object> {
 
     getStreamId() {
         return this.streamId;
+    }
+
+    setPipeline(pipeline: AiXpandPipeline) {
+        this.pipeline = pipeline;
+
+        return this;
     }
 
     hasCallback(): boolean {

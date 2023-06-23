@@ -538,6 +538,7 @@ export class AiXpandClient extends EventEmitter2 {
             this.pipelines[node][`${id}`] = new AiXpandPipeline(
                 new AiXpandDataCaptureThread<any>(id, dataSource, this.initiator),
                 node,
+                this,
             );
 
             return this.pipelines[node][id];
@@ -548,7 +549,7 @@ export class AiXpandClient extends EventEmitter2 {
             : false;
         if (isDataCaptureThread) {
             if (!this.pipelines[node][`${dataSource.id}`]) {
-                this.pipelines[node][`${dataSource.id}`] = new AiXpandPipeline(dataSource, node);
+                this.pipelines[node][`${dataSource.id}`] = new AiXpandPipeline(dataSource, node, this);
             }
 
             return this.pipelines[node][`${dataSource.id}`];
@@ -566,6 +567,7 @@ export class AiXpandClient extends EventEmitter2 {
                     this.initiator,
                 ),
                 node,
+                this,
             );
 
             return this.pipelines[node][id];
@@ -908,7 +910,11 @@ export class AiXpandClient extends EventEmitter2 {
             // Update the network pipelines' DCTs
             const dct = this.dataCaptureThreads[message.sender.host][`${streamId}`];
             if (!this.pipelines[message.sender.host][`${streamId}`]) {
-                this.pipelines[message.sender.host][`${streamId}`] = new AiXpandPipeline(dct, message.sender.host);
+                this.pipelines[message.sender.host][`${streamId}`] = new AiXpandPipeline(
+                    dct,
+                    message.sender.host,
+                    this,
+                );
             } else {
                 this.pipelines[message.sender.host][`${streamId}`].getDataCaptureThread().update(dct);
             }
