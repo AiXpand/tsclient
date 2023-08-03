@@ -688,7 +688,18 @@ export class AiXpandClient extends EventEmitter2 {
             .pipe(
                 map((message) => {
                     // parse JSON
-                    return JSON.parse(message[2].payload.toString('utf-8').replace(/\bNaN\b/g, 'null'));
+                    let parsedMessage;
+                    try {
+                        parsedMessage = JSON.parse(message[2].payload.toString('utf-8').replace(/\bNaN\b/g, 'null'));
+                    } catch (e) {
+                        console.log('Received non utf-8 compliant message. Ignoring.');
+
+                        return {
+                            EE_FORMATTER: 'ignore-this',
+                        };
+                    }
+
+                    return parsedMessage;
                 }),
             )
             .pipe(
