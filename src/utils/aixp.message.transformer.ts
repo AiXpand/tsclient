@@ -195,98 +195,105 @@ const heartbeatTransformer = (
         },
     };
 
-    for (const streamId of Object.keys(rawMessage.metadata.dct_stats)) {
-        const config = findDCTConfig(streamId, rawMessage.metadata.config_streams);
-
-        if (!registeredDCTs[`${rawMessage.metadata.dct_stats[streamId].TYPE}`]) {
-            console.log(`Found unknown DCT type: "${rawMessage.metadata.dct_stats[streamId].TYPE}"`);
-            continue;
+    rawMessage.metadata.config_streams.forEach((pipelineInfo) => {
+        if (!registeredDCTs[`${pipelineInfo.TYPE}`]) {
+            console.log(`Found unknown DCT type: "${pipelineInfo.TYPE}"`);
+            return;
         }
 
-        heartbeat.ee.dataCaptureThreads[streamId] = new AiXpandDataCaptureThread(
-            streamId,
-            deserialize(config, registeredDCTs[`${rawMessage.metadata.dct_stats[streamId].TYPE}`]),
-            config['INITIATOR_ID'],
+        const pipelineId = pipelineInfo['NAME'];
+        const pipelineConfig = { ...pipelineInfo };
+        delete pipelineConfig['PLUGINS'];
+        const stats = rawMessage.metadata.dct_stats[pipelineId];
+
+        heartbeat.ee.dataCaptureThreads[pipelineId] = new AiXpandDataCaptureThread(
+            pipelineId,
+            deserialize(pipelineConfig, registeredDCTs[`${pipelineInfo.TYPE}`]),
+            pipelineConfig['INITIATOR_ID'],
         )
-            .setTime(rawMessage.metadata.dct_stats[streamId].NOW)
+            .setTime(stats.NOW)
             .setDPS(<AiXpandDCTRate>{
-                actual: rawMessage.metadata.dct_stats[streamId].DPS,
-                configured: rawMessage.metadata.dct_stats[streamId].CFG_DPS,
-                target: rawMessage.metadata.dct_stats[streamId].TGT_DPS,
+                actual: stats.DPS,
+                configured: stats.CFG_DPS,
+                target: stats.TGT_DPS,
             })
             .setStatus(<AiXpandDCTStats>{
-                flow: rawMessage.metadata.dct_stats[streamId].FLOW,
-                collecting: rawMessage.metadata.dct_stats[streamId].COLLECTING,
-                idle: rawMessage.metadata.dct_stats[streamId].IDLE,
-                fails: rawMessage.metadata.dct_stats[streamId].FAILS,
-                log: rawMessage.metadata.dct_stats[streamId].RUNSTATS,
+                flow: stats.FLOW,
+                collecting: stats.COLLECTING,
+                idle: stats.IDLE,
+                fails: stats.FAILS,
+                log: stats.RUNSTATS,
             });
-    }
 
-    for (const rawPluginInfo of rawMessage.metadata.active_plugins) {
-        if (!plugins[rawPluginInfo.SIGNATURE]) {
-            continue;
-        }
+        if (pipelineInfo['PLUGINS']) {
+            pipelineInfo['PLUGINS'].forEach((pluginType) => {
+                if (!plugins[pluginType.SIGNATURE]) {
+                    // unknown plugin type
+                    return;
+                }
 
-        // extract the instance config from the heartbeat pipelines
-        const rawPluginConfig = findPluginConfig(
-            { signature: rawPluginInfo.SIGNATURE, id: rawPluginInfo.INSTANCE_ID },
-            rawMessage.metadata.config_streams,
-        );
+                pluginType['INSTANCES'].forEach((instance) => {
+                    // skip untagged rest exec
+                    if (
+                        pluginType.SIGNATURE === REST_CUSTOM_EXEC_SIGNATURE &&
+                        instance.ID_TAGS?.CUSTOM_SIGNATURE === undefined
+                    ) {
+                        return;
+                    }
 
-        if (
-            !rawPluginConfig || // skip if no config is found
-            (rawPluginInfo.SIGNATURE === REST_CUSTOM_EXEC_SIGNATURE && // or untagged rest exec
-                rawPluginConfig.ID_TAGS?.CUSTOM_SIGNATURE === undefined)
-        ) {
-            continue;
-        }
+                    let instanceClass;
+                    if (instance.ID_TAGS?.CUSTOM_SIGNATURE) {
+                        if (!plugins[instance.ID_TAGS.CUSTOM_SIGNATURE]?.instanceConfig) {
+                            // unknown plugin type
+                            return;
+                        }
 
-        let instanceClass;
-        if (rawPluginConfig.ID_TAGS?.CUSTOM_SIGNATURE) {
-            if (!plugins[rawPluginConfig.ID_TAGS.CUSTOM_SIGNATURE]?.instanceConfig) {
-                continue;
-            }
+                        instanceClass = plugins[instance.ID_TAGS.CUSTOM_SIGNATURE]?.instanceConfig;
+                    } else {
+                        instanceClass = plugins[pluginType.SIGNATURE].instanceConfig;
+                    }
 
-            instanceClass = plugins[rawPluginConfig.ID_TAGS.CUSTOM_SIGNATURE]?.instanceConfig;
-        } else {
-            instanceClass = plugins[rawPluginInfo.SIGNATURE].instanceConfig;
-        }
+                    const pluginInstance = new AiXpandPluginInstance(
+                        instance.INSTANCE_ID,
+                        deserialize(instance, instanceClass),
+                        null,
+                        instance.ALERT_DATA_COUNT ? deserialize(instance, AiXpandAlerter) : null,
+                    );
 
-        const pluginInstance = new AiXpandPluginInstance(
-            rawPluginInfo.INSTANCE_ID,
-            deserialize(rawPluginConfig, instanceClass),
-            null,
-            deserialize(rawPluginConfig, AiXpandAlerter),
-        );
+                    if (instance.ID_TAGS) {
+                        Object.keys(instance.ID_TAGS).forEach((key) => {
+                            pluginInstance.addTag(key, instance.ID_TAGS[key]);
+                        });
+                    }
 
-        if (rawPluginConfig['ID_TAGS']) {
-            Object.keys(rawPluginConfig['ID_TAGS']).forEach((key) => {
-                pluginInstance.addTag(key, rawPluginConfig['ID_TAGS'][key]);
+                    const instanceStats = rawMessage.metadata.active_plugins
+                        .filter((instanceStats) => instanceStats.INSTANCE_ID === instance.INSTANCE_ID)
+                        .pop();
+
+                    pluginInstance
+                        .updateMetadata(instanceStats.FREQUENCY, instanceStats.OUTSIDE_WORKING_HOURS, {
+                            init: new Date(instanceStats.INIT_TIMESTAMP),
+                            exec: new Date(instanceStats.EXEC_TIMESTAMP),
+                            config: new Date(instanceStats.LAST_CONFIG_TIMESTAMP),
+                            error: {
+                                first: instanceStats.FIRST_ERROR_TIME ? new Date(instanceStats.FIRST_ERROR_TIME) : null,
+                                last: instanceStats.LAST_ERROR_TIME ? new Date(instanceStats.LAST_ERROR_TIME) : null,
+                            },
+                        })
+                        .setStreamId(instanceStats.STREAM_ID);
+
+                    heartbeat.ee.activePlugins.push(pluginInstance);
+
+                    if (instance.LINKED_INSTANCES) {
+                        heartbeat.ee.links[pluginInstance.id] = {
+                            ownPipeline: instanceStats.STREAM_ID,
+                            instances: instance.LINKED_INSTANCES,
+                        };
+                    }
+                });
             });
         }
-
-        pluginInstance
-            .updateMetadata(rawPluginInfo.FREQUENCY, rawPluginInfo.OUTSIDE_WORKING_HOURS, {
-                init: new Date(rawPluginInfo.INIT_TIMESTAMP),
-                exec: new Date(rawPluginInfo.EXEC_TIMESTAMP),
-                config: new Date(rawPluginInfo.LAST_CONFIG_TIMESTAMP),
-                error: {
-                    first: rawPluginInfo.FIRST_ERROR_TIME ? new Date(rawPluginInfo.FIRST_ERROR_TIME) : null,
-                    last: rawPluginInfo.LAST_ERROR_TIME ? new Date(rawPluginInfo.LAST_ERROR_TIME) : null,
-                },
-            })
-            .setStreamId(rawPluginInfo.STREAM_ID);
-
-        heartbeat.ee.activePlugins.push(pluginInstance);
-
-        if (rawPluginConfig['LINKED_INSTANCES']) {
-            heartbeat.ee.links[pluginInstance.id] = {
-                ownPipeline: rawPluginInfo.STREAM_ID,
-                instances: rawPluginConfig['LINKED_INSTANCES'],
-            };
-        }
-    }
+    });
 
     return plainToInstance(AiXPHeartbeatData, heartbeat);
 };
@@ -373,33 +380,4 @@ const keysToCamel = function (o) {
     }
 
     return o;
-};
-
-const findDCTConfig = (needle: string, haystack: any[]) => {
-    let returnable = {};
-
-    haystack.forEach((config) => {
-        // TODO: for ... of
-        if (config.NAME === needle) {
-            returnable = config;
-        }
-    });
-
-    return returnable;
-};
-
-const findPluginConfig = (needle: { signature: string; id: string }, haystack: any[]) => {
-    let returnable = null;
-
-    haystack.forEach((config) => {
-        const plugin = config.PLUGINS.find((plugin) => plugin.SIGNATURE === needle.signature);
-        if (plugin) {
-            const instance = plugin.INSTANCES.find((instance) => instance.INSTANCE_ID === needle.id);
-            if (instance) {
-                returnable = instance;
-            }
-        }
-    });
-
-    return returnable;
 };
