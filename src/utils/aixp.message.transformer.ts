@@ -210,20 +210,24 @@ const heartbeatTransformer = (
             pipelineId,
             deserialize(pipelineConfig, registeredDCTs[`${pipelineInfo.TYPE}`]),
             pipelineConfig['INITIATOR_ID'],
-        )
-            .setTime(stats.NOW)
-            .setDPS(<AiXpandDCTRate>{
-                actual: stats.DPS,
-                configured: stats.CFG_DPS,
-                target: stats.TGT_DPS,
-            })
-            .setStatus(<AiXpandDCTStats>{
-                flow: stats.FLOW,
-                collecting: stats.COLLECTING,
-                idle: stats.IDLE,
-                fails: stats.FAILS,
-                log: stats.RUNSTATS,
-            });
+        );
+
+        if (stats) {
+            heartbeat.ee.dataCaptureThreads[pipelineId]
+                .setTime(stats.NOW)
+                .setDPS(<AiXpandDCTRate>{
+                    actual: stats.DPS,
+                    configured: stats.CFG_DPS,
+                    target: stats.TGT_DPS,
+                })
+                .setStatus(<AiXpandDCTStats>{
+                    flow: stats.FLOW,
+                    collecting: stats.COLLECTING,
+                    idle: stats.IDLE,
+                    fails: stats.FAILS,
+                    log: stats.RUNSTATS,
+                });
+        }
 
         if (pipelineInfo['PLUGINS']) {
             pipelineInfo['PLUGINS'].forEach((pluginType) => {

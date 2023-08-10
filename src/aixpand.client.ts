@@ -37,13 +37,15 @@ import { v4 as uuidv4 } from 'uuid';
 import { REST_CUSTOM_EXEC_SIGNATURE } from './abstract.rest.custom.exec.plugin';
 import { BufferServiceInterface } from './models/buffer.service.interface';
 import { AiXpandMemoryBufferService } from './aixpand.memory.buffer.service';
+import { VideoFile } from './models/dct/video.file.dct';
 
 export enum DataCaptureThreadType {
     DUMMY_STREAM = 'ADummyStructStream',
     VIDEO_STREAM = 'VideoStream',
     VIDEO_FILE_MAP_REDUCE = 'video_file_map_reduce',
+    VIDEO_FILE = 'VideoFile',
     META_STREAM = 'MetaStream',
-    VOID_STREAM = 'Void',
+    VOID_STREAM = 'VOID',
 }
 
 export type EngineStatus = {
@@ -214,6 +216,7 @@ export class AiXpandClient extends EventEmitter2 {
         [`${DataCaptureThreadType.META_STREAM}`]: MetaStream,
         [`${DataCaptureThreadType.DUMMY_STREAM}`]: DummyStream,
         [`${DataCaptureThreadType.VIDEO_FILE_MAP_REDUCE}`]: VideoFileMultiNode,
+        [`${DataCaptureThreadType.VIDEO_FILE}`]: VideoFile,
         [`${DataCaptureThreadType.VOID_STREAM}`]: Void,
     };
 
