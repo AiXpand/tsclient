@@ -90,7 +90,7 @@ export class VideoFileMultiNode {
                 instance[field.key] = config[field.key];
             }
 
-            if (!instance[field.key] && !field.optional) {
+            if (instance[field.key] !== null && instance[field.key] !== undefined && !field.optional) {
                 throw new Error(`Cannot properly instantiate DCT of type ${DataCaptureThreadType.VIDEO_FILE_MAP_REDUCE}: ${field.key} is missing.`);
             }
         });
