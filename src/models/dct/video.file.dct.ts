@@ -1,5 +1,6 @@
 import { Bind, Embedable, Embedded, DataCaptureThreadConfig } from '../../decorators';
 import { DataCaptureThreadType } from '../../aixpand.client';
+import { IsObject } from 'class-validator';
 
 @Embedable()
 export class VideoFileStreamConfigMetadata {
@@ -17,7 +18,7 @@ export class VideoFile {
     capResolution: number;
 
     @Bind('DEFAULT_PLUGIN')
-    isDefault: boolean;
+    defaultPlugin: boolean;
 
     @Bind('URL')
     url: string;
@@ -37,13 +38,86 @@ export class VideoFile {
     @Embedded(VideoFileStreamConfigMetadata, 'STREAM_CONFIG_METADATA')
     streamConfigMetadata: VideoFileStreamConfigMetadata;
 
-    constructor(url: string) {
-        this.capResolution = 50;
-        this.isDefault = false;
-        this.url = url;
-        this.isLive = false;
-        this.reconnectable = 'KEEPALIVE';
-        this.streamWindow = 1;
-        this.streamConfigMetadata = new VideoFileStreamConfigMetadata();
+    static make(config: any) {
+        const schema = VideoFile.getSchema();
+        const instance = new VideoFile();
+
+        if (!IsObject(config)) {
+            config = {};
+        }
+
+        schema.fields.forEach((field) => {
+            this[field.key] = field.default;
+            if (config[field.key]) {
+                // TODO: validate data type
+                instance[field.key] = config[field.key];
+            }
+
+            if (!instance[field.key] && !field.optional) {
+                throw new Error(`Cannot properly instantiate DCT of type ${schema.type}: ${field.key} is missing.`);
+            }
+        });
+
+        instance.streamConfigMetadata = new VideoFileStreamConfigMetadata();
+
+        return instance;
+    }
+
+    static getSchema() {
+        return {
+            name: 'Video File',
+            description: 'A DCT dedicated to consuming video files accessible at an URL.',
+            type: DataCaptureThreadType.VIDEO_FILE,
+            fields: [
+                {
+                    key: 'capResolution',
+                    type: 'integer',
+                    label: 'Cap Resolution',
+                    description: 'The maximum acquisition rate for the instance of DCT',
+                    default: 50,
+                    optional: false,
+                },
+                {
+                    key: 'defaultPlugin',
+                    type: 'boolean',
+                    label: 'Default Plugin',
+                    description: '',
+                    default: false,
+                    optional: false,
+                },
+                {
+                    key: 'url',
+                    type: 'string',
+                    label: 'URL',
+                    description: 'The URL of the video stream source.',
+                    default: null,
+                    optional: false,
+                },
+                {
+                    key: 'isLive',
+                    type: 'boolean',
+                    label: 'Is Live Feed',
+                    description: 'Flag to signal that the URL provided is of a live feed.',
+                    default: true,
+                    optional: false,
+                },
+                {
+                    key: 'reconnectable',
+                    type: ['boolean', 'string'],
+                    label: 'Reconnectable',
+                    description: 'Describes the behavior when the feed disconnects. Allowed values are true, false and KEEPALIVE',
+                    default: 'KEEPALIVE',
+                    optional: false,
+                },
+                {
+                    key: 'streamWindow',
+                    type: 'integer',
+                    label: 'Stream Window',
+                    description: '',
+                    default: 1,
+                    optional: false,
+                },
+            ],
+        };
     }
 }

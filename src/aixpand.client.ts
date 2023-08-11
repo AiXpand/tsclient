@@ -431,6 +431,18 @@ export class AiXpandClient extends EventEmitter2 {
         return this.publish(engine, message);
     }
 
+    getRegisteredDCTTypes() {
+        return Object.keys(this.registeredDCTs).map((key) => ({
+            type: this.registeredDCTs[key].getSchema().type,
+            name: this.registeredDCTs[key].getSchema().name,
+            description: this.registeredDCTs[key].getSchema().description,
+        }));
+    }
+
+    getDCTSchema(dct: string) {
+        return this.registeredDCTs[dct].getSchema();
+    }
+
     /**
      * Returns a specific stream of events in the network. It can offer a window inside all the messages published
      * in a specific message type category.
@@ -566,7 +578,7 @@ export class AiXpandClient extends EventEmitter2 {
             this.pipelines[node][`${id}`] = new AiXpandPipeline(
                 new AiXpandDataCaptureThread<any>(
                     id,
-                    new MetaStream(dataSource.getDataCaptureThread().id),
+                    MetaStream.make({ collectedStreams: [ dataSource.getDataCaptureThread().id ] }),
                     this.initiator,
                 ),
                 node,

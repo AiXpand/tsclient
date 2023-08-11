@@ -1,5 +1,6 @@
 import { Bind, Embedable, Embedded, DataCaptureThreadConfig } from '../../decorators';
 import { DataCaptureThreadType } from '../../aixpand.client';
+import { IsObject } from 'class-validator';
 
 @Embedable()
 export class WorkerStreamConfigMetadata {
@@ -57,7 +58,7 @@ export class VideoFileMultiNode {
     capResolution: number;
 
     @Bind('DEFAULT_PLUGIN')
-    isDefault: boolean;
+    defaultPlugin: boolean;
 
     @Bind('URL')
     url: string;
@@ -74,12 +75,79 @@ export class VideoFileMultiNode {
     @Embedded(VideoFileMultiNodeStreamConfigMetadata, 'STREAM_CONFIG_METADATA')
     streamConfigMetadata: VideoFileMultiNodeStreamConfigMetadata;
 
-    constructor(url: string, extension: string, workers: string[]) {
-        this.capResolution = 50;
-        this.isDefault = true;
-        this.url = url;
-        this.isLive = false;
-        this.reconnectable = 'KEEPALIVE';
-        this.streamConfigMetadata = new VideoFileMultiNodeStreamConfigMetadata(extension, workers);
+    static make(config: any) {
+        const schema = VideoFileMultiNode.getSchema();
+        const instance = new VideoFileMultiNode();
+
+        if (!IsObject(config)) {
+            config = {};
+        }
+
+        schema.fields.forEach((field) => {
+            this[field.key] = field.default;
+            if (config[field.key]) {
+                // TODO: validate data type
+                instance[field.key] = config[field.key];
+            }
+
+            if (!instance[field.key] && !field.optional) {
+                throw new Error(`Cannot properly instantiate DCT of type ${DataCaptureThreadType.VIDEO_FILE_MAP_REDUCE}: ${field.key} is missing.`);
+            }
+        });
+
+        // TODO: implement instantiation of DCT parts
+        instance.streamConfigMetadata = new VideoFileMultiNodeStreamConfigMetadata(config.extension, config.workers);
+
+        return instance;
+    }
+
+    static getSchema() {
+        return {
+            name: 'Video File (Multi Worker)',
+            description: 'A DCT that enables consuming video files in a multi-worker strategy.',
+            type: DataCaptureThreadType.VIDEO_FILE_MAP_REDUCE,
+            fields: [
+                {
+                    key: 'capResolution',
+                    type: 'integer',
+                    label: 'Cap Resolution',
+                    description: 'The maximum acquisition rate for the instance of DCT',
+                    default: 50,
+                    optional: false,
+                },
+                {
+                    key: 'defaultPlugin',
+                    type: 'boolean',
+                    label: 'Default Plugin',
+                    description: '',
+                    default: false,
+                    optional: false,
+                },
+                {
+                    key: 'url',
+                    type: 'string',
+                    label: 'URL',
+                    description: 'The URL of the video stream source.',
+                    default: null,
+                    optional: false,
+                },
+                {
+                    key: 'isLive',
+                    type: 'boolean',
+                    label: 'Is Live Feed',
+                    description: 'Flag to signal that the URL provided is of a live feed.',
+                    default: true,
+                    optional: false,
+                },
+                {
+                    key: 'reconnectable',
+                    type: ['boolean', 'string'],
+                    label: 'Reconnectable',
+                    description: 'Describes the behavior when the feed disconnects. Allowed values are true, false and KEEPALIVE',
+                    default: 'KEEPALIVE',
+                    optional: false,
+                },
+            ],
+        };
     }
 }

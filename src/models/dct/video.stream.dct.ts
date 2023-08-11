@@ -1,13 +1,14 @@
 import { Bind, DataCaptureThreadConfig } from '../../decorators';
 import { DataCaptureThreadType } from '../../aixpand.client';
+import { IsObject } from 'class-validator';
 
 @DataCaptureThreadConfig()
 export class VideoStream {
     @Bind('CAP_RESOLUTION')
-    fps: number;
+    capResolution: number;
 
     @Bind('DEFAULT_PLUGIN')
-    isDefault: boolean;
+    defaultPlugin: boolean;
 
     @Bind('URL')
     url: string;
@@ -21,11 +22,78 @@ export class VideoStream {
     @Bind('TYPE')
     type: string = DataCaptureThreadType.VIDEO_STREAM;
 
-    constructor(url: string, isLive = true) {
-        this.fps = 25;
-        this.isDefault = true;
-        this.url = url;
-        this.isLive = isLive;
-        this.reconnectable = 'YES';
+    static make(config: any) {
+        const schema = VideoStream.getSchema();
+        const instance = new VideoStream();
+
+        console.log('video stream raw data: ', config);
+
+        if (!IsObject(config)) {
+            config = {};
+        }
+
+        schema.fields.forEach((field) => {
+            this[field.key] = field.default;
+            if (config[field.key]) {
+                // TODO: validate data type
+                instance[field.key] = config[field.key];
+            }
+
+            if (!instance[field.key] && !field.optional) {
+                throw new Error(`Cannot properly instantiate DCT of type ${schema.type}: ${field.key} is missing.`);
+            }
+        });
+
+        return instance;
+    }
+
+    static getSchema() {
+        return {
+            name: 'Video Stream',
+            description: 'A DCT designed to consume real-time video streams.',
+            type: DataCaptureThreadType.VIDEO_STREAM,
+            fields: [
+                {
+                    key: 'capResolution',
+                    type: 'integer',
+                    label: 'Cap Resolution',
+                    description: 'The maximum acquisition rate for the instance of DCT',
+                    default: 20,
+                    optional: false,
+                },
+                {
+                    key: 'defaultPlugin',
+                    type: 'boolean',
+                    label: 'Default Plugin',
+                    description: '',
+                    default: false,
+                    optional: false,
+                },
+                {
+                    key: 'url',
+                    type: 'string',
+                    label: 'URL',
+                    description: 'The URL of the video stream source.',
+                    default: null,
+                    optional: false,
+                },
+                {
+                    key: 'isLive',
+                    type: 'boolean',
+                    label: 'Is Live Feed',
+                    description: 'Flag to signal that the URL provided is of a live feed.',
+                    default: true,
+                    optional: false,
+                },
+                {
+                    key: 'reconnectable',
+                    type: ['boolean', 'string'],
+                    label: 'Reconnectable',
+                    description: 'Describes the behavior when the feed disconnects. Allowed values are true, false and KEEPALIVE',
+                    default: 'KEEPALIVE',
+                    optional: false,
+                }
+            ],
+        };
     }
 }
