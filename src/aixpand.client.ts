@@ -443,6 +443,10 @@ export class AiXpandClient extends EventEmitter2 {
         return this.registeredDCTs[dct].getSchema();
     }
 
+    getDCTClass(dct: string) {
+        return this.registeredDCTs[dct];
+    }
+
     /**
      * Returns a specific stream of events in the network. It can offer a window inside all the messages published
      * in a specific message type category.
@@ -544,7 +548,7 @@ export class AiXpandClient extends EventEmitter2 {
         });
     }
 
-    createPipeline(node: string, dataSource = null) {
+    createPipeline(node: string, dataSource = null, name = null) {
         if (!dataSource) {
             // TODO:
         }
@@ -553,7 +557,11 @@ export class AiXpandClient extends EventEmitter2 {
             ? Reflect.getMetadata('data-capture-thread-config', dataSource.constructor)
             : false;
         if (isDataCaptureThreadConfig) {
-            const id = uuidv4().substring(0, 13);
+            let id = uuidv4().substring(0, 13);
+            if (name) {
+                id = name;
+            }
+
             this.pipelines[node][`${id}`] = new AiXpandPipeline(
                 new AiXpandDataCaptureThread<any>(id, dataSource, this.initiator),
                 node,
