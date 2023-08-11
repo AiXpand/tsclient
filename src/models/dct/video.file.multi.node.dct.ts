@@ -84,7 +84,7 @@ export class VideoFileMultiNode {
         }
 
         schema.fields.forEach((field) => {
-            this[field.key] = field.default;
+            instance[field.key] = field.default;
             if (config[field.key]) {
                 // TODO: validate data type
                 instance[field.key] = config[field.key];
