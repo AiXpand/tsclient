@@ -470,8 +470,12 @@ export class AiXpandClient extends EventEmitter2 {
      * @param node the network node for which to return the pipelines
      * @return Dictionary<AiXpandPipeline> the pipelines
      */
-    getHostPipelines(node: string): Dictionary<AiXpandPipeline> {
-        return this.pipelines[node];
+    getHostPipelines(node: string) {
+        return Object.keys(this.pipelines[node]).map((id) => ({
+            name: id,
+            dct: this.pipelines[node][id].getDataCaptureThread(),
+            instances: this.pipelines[node][id].getPluginInstances().length,
+        }));
     }
 
     /**

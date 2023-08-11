@@ -9,13 +9,6 @@ export const deserialize = <T extends object>(object: any, targetType: { new ():
     const propertyMappings: Map<string, { propertyName: string; options: BindingOptions }> =
         Reflect.getMetadata('propertyMappings', targetType) || new Map();
 
-    const isDCT: boolean = Reflect.getMetadata('data-capture-thread-config', targetType) || false;
-
-    if (isDCT) {
-        // @ts-ignore
-        console.log('deserializing DCT', targetType.getSchema(), object);
-    }
-
     propertyMappings.forEach((property, key) => {
         if (!object) {
             return;
