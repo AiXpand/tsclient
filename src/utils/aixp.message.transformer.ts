@@ -274,17 +274,19 @@ const heartbeatTransformer = (
                         .filter((instanceStats) => instanceStats.INSTANCE_ID === instance.INSTANCE_ID)
                         .pop();
 
-                    pluginInstance
-                        .updateMetadata(instanceStats.FREQUENCY, instanceStats.OUTSIDE_WORKING_HOURS, {
-                            init: new Date(instanceStats.INIT_TIMESTAMP),
-                            exec: new Date(instanceStats.EXEC_TIMESTAMP),
-                            config: new Date(instanceStats.LAST_CONFIG_TIMESTAMP),
-                            error: {
-                                first: instanceStats.FIRST_ERROR_TIME ? new Date(instanceStats.FIRST_ERROR_TIME) : null,
-                                last: instanceStats.LAST_ERROR_TIME ? new Date(instanceStats.LAST_ERROR_TIME) : null,
-                            },
-                        })
-                        .setStreamId(instanceStats.STREAM_ID);
+                    if (instanceStats) {
+                        pluginInstance
+                            .updateMetadata(instanceStats.FREQUENCY, instanceStats.OUTSIDE_WORKING_HOURS, {
+                                init: new Date(instanceStats.INIT_TIMESTAMP),
+                                exec: new Date(instanceStats.EXEC_TIMESTAMP),
+                                config: new Date(instanceStats.LAST_CONFIG_TIMESTAMP),
+                                error: {
+                                    first: instanceStats.FIRST_ERROR_TIME ? new Date(instanceStats.FIRST_ERROR_TIME) : null,
+                                    last: instanceStats.LAST_ERROR_TIME ? new Date(instanceStats.LAST_ERROR_TIME) : null,
+                                },
+                            })
+                            .setStreamId(instanceStats.STREAM_ID);
+                    }
 
                     heartbeat.ee.activePlugins.push(pluginInstance);
 
