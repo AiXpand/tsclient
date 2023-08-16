@@ -401,6 +401,16 @@ export class AiXpandClient extends EventEmitter2 {
         return;
     }
 
+    getFleet() {
+        return Object.keys(this.fleet).map((engineName) => ({
+            name: engineName,
+            status: {
+                online: this.fleet[engineName].online,
+                lastSeen: this.fleet[engineName].lastSeen,
+            },
+        }));
+    }
+
     restartExecutionEngine(engine: string) {
         if (!this.fleet[engine]) {
             this.emit(AiXpandClientEvent.AIXP_EXCEPTION, {
