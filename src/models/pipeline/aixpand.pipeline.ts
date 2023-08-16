@@ -4,6 +4,11 @@ import { AiXpandDataCaptureThread } from '../dct';
 import { serialize } from '../../utils';
 import { Pipeline } from '../../decorators';
 import { AiXpandClient } from '../../aixpand.client';
+import { AiXPMessage, AiXPNotificationData } from '../message';
+
+export enum NotificationMessagesParts {
+    ARCHIVE_SUCCESS = 'Successfully archived pipeline',
+}
 
 @Pipeline()
 export class AiXpandPipeline {
@@ -135,12 +140,34 @@ export class AiXpandPipeline {
     }
 
     close() {
+        const pipelineName = this.getDataCaptureThread().id;
         const message = {
-            PAYLOAD: this.getDataCaptureThread().id,
+            PAYLOAD: pipelineName,
             ACTION: AiXpandCommandAction.ARCHIVE_CONFIG,
         };
 
-        return this.client.publish(this.node, message);
+        return this.client.publish(this.node, message).then(
+            (notif: AiXPMessage<AiXPNotificationData>) => {
+                const messageText = notif.data.notification;
+
+                if (
+                    !!messageText.match(NotificationMessagesParts.ARCHIVE_SUCCESS) &&
+                    !!messageText.match(pipelineName)
+                ) {
+                    this.client.removePipeline(this);
+
+                    return {
+                        message: messageText,
+                        pipeline: pipelineName,
+                    };
+                }
+
+                return notif;
+            },
+            (err: AiXPMessage<AiXPNotificationData>) => {
+                return err;
+            },
+        );
     }
 
     private compile(session: string | null = null) {

@@ -281,8 +281,12 @@ const heartbeatTransformer = (
                                 exec: new Date(instanceStats.EXEC_TIMESTAMP),
                                 config: new Date(instanceStats.LAST_CONFIG_TIMESTAMP),
                                 error: {
-                                    first: instanceStats.FIRST_ERROR_TIME ? new Date(instanceStats.FIRST_ERROR_TIME) : null,
-                                    last: instanceStats.LAST_ERROR_TIME ? new Date(instanceStats.LAST_ERROR_TIME) : null,
+                                    first: instanceStats.FIRST_ERROR_TIME
+                                        ? new Date(instanceStats.FIRST_ERROR_TIME)
+                                        : null,
+                                    last: instanceStats.LAST_ERROR_TIME
+                                        ? new Date(instanceStats.LAST_ERROR_TIME)
+                                        : null,
                                 },
                             })
                             .setStreamId(instanceStats.STREAM_ID);
