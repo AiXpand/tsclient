@@ -8,6 +8,7 @@ import { AiXPMessage, AiXPNotificationData } from '../message';
 
 export enum NotificationMessagesParts {
     ARCHIVE_SUCCESS = 'Successfully archived pipeline',
+    DELETE_SUCCESS = 'Successfully deleted pipeline',
 }
 
 @Pipeline()
@@ -151,7 +152,8 @@ export class AiXpandPipeline {
                 const messageText = notif.data.notification;
 
                 if (
-                    !!messageText.match(NotificationMessagesParts.ARCHIVE_SUCCESS) &&
+                    (!!messageText.match(NotificationMessagesParts.ARCHIVE_SUCCESS) ||
+                        !!messageText.match(NotificationMessagesParts.DELETE_SUCCESS)) &&
                     !!messageText.match(pipelineName)
                 ) {
                     this.client.removePipeline(this);
