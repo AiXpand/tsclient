@@ -10,6 +10,9 @@ export class DummyStream {
     @Bind('TYPE')
     type: string = DataCaptureThreadType.DUMMY_STREAM;
 
+    @Bind('_CUSTOM_METADATA')
+    metadata: string;
+
     static make(config: any = {}) {
         const schema = DummyStream.getSchema();
         const instance = new DummyStream();
@@ -19,13 +22,15 @@ export class DummyStream {
         }
 
         schema.fields.forEach((field) => {
-            instance[field.key] = field.default;
-            if (config[field.key]) {
-                // TODO: validate data type
-                instance[field.key] = config[field.key];
+            const key = field.key;
+
+            if (key !== 'metadata') {
+                instance[`${key}`] = config[`${key}`] ?? field.default;
+            } else {
+                instance[`${key}`] = config[`${key}`] ? JSON.stringify(config[`${key}`]) : null;
             }
 
-            if (instance[field.key] !== null && instance[field.key] !== undefined && !field.optional) {
+            if ((instance[`${key}`] === null || instance[`${key}`] === undefined) && !field.optional) {
                 throw new Error(`Cannot properly instantiate DCT of type ${schema.type}: ${field.key} is missing.`);
             }
         });
@@ -47,7 +52,15 @@ export class DummyStream {
                     default: 1,
                     optional: false,
                 },
+                {
+                    key: 'metadata',
+                    type: 'string',
+                    label: 'Metadata',
+                    description: 'Key-value pairs to be encoded as JSON and attached to the DCT.',
+                    default: null,
+                    optional: true,
+                },
             ],
-        }
+        };
     }
 }

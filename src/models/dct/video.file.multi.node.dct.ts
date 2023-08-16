@@ -75,6 +75,9 @@ export class VideoFileMultiNode {
     @Embedded(VideoFileMultiNodeStreamConfigMetadata, 'STREAM_CONFIG_METADATA')
     streamConfigMetadata: VideoFileMultiNodeStreamConfigMetadata;
 
+    @Bind('_CUSTOM_METADATA')
+    metadata: string;
+
     static make(config: any) {
         const schema = VideoFileMultiNode.getSchema();
         const instance = new VideoFileMultiNode();
@@ -84,14 +87,16 @@ export class VideoFileMultiNode {
         }
 
         schema.fields.forEach((field) => {
-            instance[field.key] = field.default;
-            if (config[field.key]) {
-                // TODO: validate data type
-                instance[field.key] = config[field.key];
+            const key = field.key;
+
+            if (key !== 'metadata') {
+                instance[`${key}`] = config[`${key}`] ?? field.default;
+            } else {
+                instance[`${key}`] = config[`${key}`] ? JSON.stringify(config[`${key}`]) : null;
             }
 
-            if (instance[field.key] !== null && instance[field.key] !== undefined && !field.optional) {
-                throw new Error(`Cannot properly instantiate DCT of type ${DataCaptureThreadType.VIDEO_FILE_MAP_REDUCE}: ${field.key} is missing.`);
+            if ((instance[`${key}`] === null || instance[`${key}`] === undefined) && !field.optional) {
+                throw new Error(`Cannot properly instantiate DCT of type ${schema.type}: ${field.key} is missing.`);
             }
         });
 
@@ -143,9 +148,18 @@ export class VideoFileMultiNode {
                     key: 'reconnectable',
                     type: ['boolean', 'string'],
                     label: 'Reconnectable',
-                    description: 'Describes the behavior when the feed disconnects. Allowed values are true, false and KEEPALIVE',
+                    description:
+                        'Describes the behavior when the feed disconnects. Allowed values are true, false and KEEPALIVE',
                     default: 'KEEPALIVE',
                     optional: false,
+                },
+                {
+                    key: 'metadata',
+                    type: 'string',
+                    label: 'Metadata',
+                    description: 'Key-value pairs to be encoded as JSON and attached to the DCT.',
+                    default: null,
+                    optional: true,
                 },
             ],
         };

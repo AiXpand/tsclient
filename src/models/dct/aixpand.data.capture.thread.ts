@@ -82,6 +82,11 @@ export class AiXpandDataCaptureThread<T extends object> {
         return this;
     }
 
+    getMetadata() {
+        // @ts-ignore
+        return this.config?.metadata ? JSON.parse(this.config.metadata) : null;
+    }
+
     /**
      * Method for serializing this object into AiXpand network DCT configuration format.
      *

@@ -590,7 +590,7 @@ export class AiXpandClient extends EventEmitter2 {
             this.pipelines[node][`${id}`] = new AiXpandPipeline(
                 new AiXpandDataCaptureThread<any>(
                     id,
-                    MetaStream.make({ collectedStreams: [ dataSource.getDataCaptureThread().id ] }),
+                    MetaStream.make({ collectedStreams: [dataSource.getDataCaptureThread().id] }),
                     this.initiator,
                 ),
                 node,
