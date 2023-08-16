@@ -2,6 +2,7 @@ import 'reflect-metadata';
 import { REST_CUSTOM_EXEC_SIGNATURE } from '../abstract.rest.custom.exec.plugin';
 import { BindingOptions } from '../decorators';
 import { AiXpandPluginInstance } from '../models';
+import { ANY_PLUGIN_SIGNATURE } from '../constants';
 
 export type LinkInfo<T extends object> = {
     links: {
@@ -72,7 +73,7 @@ export const serialize = <T extends object>(
         }
     } else if (!isDataCaptureThread && !isPluginInstanceAlerter) {
         const partSignatures = Reflect.getMetadata('signatures', instance.constructor);
-        if (!partSignatures.includes(signature) && !partSignatures.includes(REST_CUSTOM_EXEC_SIGNATURE)) {
+        if (!partSignatures.includes(ANY_PLUGIN_SIGNATURE) && !partSignatures.includes(signature) && !partSignatures.includes(REST_CUSTOM_EXEC_SIGNATURE)) {
             console.log(
                 `Cannot serialize "${signature}"; Found EmbeddedConfig without "${signature}" registered signature.`,
             );

@@ -75,7 +75,7 @@ export class VideoFileMultiNode {
     @Embedded(VideoFileMultiNodeStreamConfigMetadata, 'STREAM_CONFIG_METADATA')
     streamConfigMetadata: VideoFileMultiNodeStreamConfigMetadata;
 
-    @Bind('_CUSTOM_METADATA')
+    @Bind('_CUSTOM_METADATA', { nullable: true })
     metadata: string;
 
     static make(config: any) {

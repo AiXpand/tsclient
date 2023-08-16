@@ -38,7 +38,7 @@ export class VideoFile {
     @Embedded(VideoFileStreamConfigMetadata, 'STREAM_CONFIG_METADATA')
     streamConfigMetadata: VideoFileStreamConfigMetadata;
 
-    @Bind('_CUSTOM_METADATA')
+    @Bind('_CUSTOM_METADATA', { nullable: true })
     metadata: string;
 
     static make(config: any) {

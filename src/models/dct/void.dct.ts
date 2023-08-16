@@ -7,7 +7,7 @@ export class Void {
     @Bind('TYPE')
     type: string = DataCaptureThreadType.VOID_STREAM;
 
-    @Bind('_CUSTOM_METADATA')
+    @Bind('_CUSTOM_METADATA', { nullable: true })
     metadata: string;
 
     static make(config: any = {}) {

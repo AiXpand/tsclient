@@ -450,11 +450,53 @@ export class AiXpandClient extends EventEmitter2 {
     }
 
     getDCTSchema(dct: string) {
+        if (!this.registeredDCTs[dct]) {
+            return null;
+        }
+
         return this.registeredDCTs[dct].getSchema();
     }
 
     getDCTClass(dct: string) {
+        if (!this.registeredDCTs[dct]) {
+            return null;
+        }
+
         return this.registeredDCTs[dct];
+    }
+
+    getRegisteredPluginTypes() {
+        return Object.keys(this.registeredPlugins)
+            .filter((signature) => signature !== REST_CUSTOM_EXEC_SIGNATURE)
+            .map((signature) => ({
+                signature,
+                name: this.registeredPlugins[signature].instanceConfig.getSchema().name,
+                description: this.registeredPlugins[signature].instanceConfig.getSchema().description,
+            }));
+    }
+
+    getPluginSchema(signature: string) {
+        if (!this.registeredPlugins[signature]) {
+            return null;
+        }
+
+        return this.registeredPlugins[signature].instanceConfig.getSchema();
+    }
+
+    getPluginConfigClass(signature: string) {
+        if (!this.registeredPlugins[signature]) {
+            return null;
+        }
+
+        return this.registeredPlugins[signature].instanceConfig;
+    }
+
+    getPluginPayloadClass(signature: string) {
+        if (!this.registeredPlugins[signature]) {
+            return null;
+        }
+
+        return this.registeredPlugins[signature].payload;
     }
 
     /**

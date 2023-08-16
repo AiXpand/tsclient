@@ -22,7 +22,7 @@ export class VideoStream {
     @Bind('TYPE')
     type: string = DataCaptureThreadType.VIDEO_STREAM;
 
-    @Bind('_CUSTOM_METADATA')
+    @Bind('_CUSTOM_METADATA', { nullable: true })
     metadata: string;
 
     static make(config: any) {
