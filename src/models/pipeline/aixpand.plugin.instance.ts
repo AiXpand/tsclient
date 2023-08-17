@@ -68,7 +68,7 @@ export class AiXpandPluginInstance<T extends object> {
      *
      * @private
      */
-    private readonly tags: Map<string, string>;
+    private tags: Map<string, string>;
 
     /**
      * Instance callback. Whenever a specific callback is set for an instance, the pipeline response
@@ -211,6 +211,18 @@ export class AiXpandPluginInstance<T extends object> {
 
     getTags(): Map<string, string> {
         return this.tags;
+    }
+
+    resetTags() {
+        this.tags.clear();
+
+        return this;
+    }
+
+    bulkSetTags(tags: Map<string, string>) {
+        this.tags = tags;
+
+        return this;
     }
 
     getConfig() {

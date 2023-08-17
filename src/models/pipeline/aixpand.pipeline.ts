@@ -77,7 +77,7 @@ export class AiXpandPipeline {
         } else {
             existingInstance
                 .updateConfig(candidate.getConfig())
-                .updateAlerter(candidate.getAlerter())
+                .bulkSetTags(candidate.getTags())
                 .updateMetadata(candidate.frequency, candidate.outsideWorkingHours, candidate.timers);
         }
 
@@ -117,7 +117,7 @@ export class AiXpandPipeline {
     }
 
     updateInstance(instance: AiXpandPluginInstance<any>) {
-        const instanceConfig = serialize(instance.getConfig(), null, null, null, instance.getConfig().getChangeset());
+        const instanceConfig = serialize(instance.getConfig(), null, instance.getTags(), null, instance.getConfig().getChangeset());
         const message = {
             PAYLOAD: {
                 NAME: instance.getStreamId(),
