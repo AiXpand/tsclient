@@ -14,7 +14,7 @@ export type LinkInfo<T extends object> = {
 export const serialize = <T extends object>(
     instance: T,
     signature = null,
-    tags: Map<string, string> = new Map<string, string>(),
+    tags: any = {},
     linkInfo: null | LinkInfo<T> = null,
     changeset = null,
 ): any => {
@@ -33,7 +33,7 @@ export const serialize = <T extends object>(
     }
 
     if (tags === null) {
-        tags = new Map<string, string>();
+        tags = {};
     }
 
     const serializedObject: any = {};
@@ -45,13 +45,13 @@ export const serialize = <T extends object>(
         signature = Reflect.getMetadata('signature', instance.constructor);
 
         if (Reflect.hasMetadata('is-rest-custom-exec', instance.constructor)) {
-            tags.set('CUSTOM_SIGNATURE', signature);
+            tags['CUSTOM_SIGNATURE'] = signature;
         }
 
-        if (tags.size) {
+        if (Object.keys(tags).length) {
             serializedObject['ID_TAGS'] = {};
-            tags.forEach((value, key) => {
-                serializedObject['ID_TAGS'][`${key}`] = value;
+            Object.keys(tags).forEach((key) => {
+                serializedObject['ID_TAGS'][`${key}`] = tags[key];
             });
         }
 

@@ -5,6 +5,7 @@ import { AiXpandCommandAction } from './aixpand.command';
 import { createChangeTrackingProxy } from '../../utils/aixp.track.changes.proxies';
 import { AiXpandAlerter } from '../aixpand.alerter';
 import { AiXpandPipeline } from './aixpand.pipeline';
+import { Dictionary } from '../dictionary';
 
 export type PluginInstanceTimers = {
     init?: Date | null;
@@ -68,7 +69,7 @@ export class AiXpandPluginInstance<T extends object> {
      *
      * @private
      */
-    private tags: Map<string, string>;
+    private tags: Dictionary<string> = {};
 
     /**
      * Instance callback. Whenever a specific callback is set for an instance, the pipeline response
@@ -117,7 +118,7 @@ export class AiXpandPluginInstance<T extends object> {
 
         this.updateConfig(config);
         this.alerter = alerter;
-        this.tags = new Map<string, string>();
+        this.tags = {};
         this.callback = callback;
     }
 
@@ -198,28 +199,30 @@ export class AiXpandPluginInstance<T extends object> {
     }
 
     removeTag(key): AiXpandPluginInstance<T> {
-        this.tags.delete(key);
+        if (this.tags[key]) {
+            delete this.tags[key];
+        }
 
         return this;
     }
 
     addTag(key, value): AiXpandPluginInstance<T> {
-        this.tags.set(key, value);
+        this.tags[key] = value;
 
         return this;
     }
 
-    getTags(): Map<string, string> {
+    getTags() {
         return this.tags;
     }
 
     resetTags() {
-        this.tags.clear();
+        this.tags = {};
 
         return this;
     }
 
-    bulkSetTags(tags: Map<string, string>) {
+    bulkSetTags(tags) {
         this.tags = tags;
 
         return this;

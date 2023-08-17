@@ -77,6 +77,7 @@ export class AiXpandPipeline {
         } else {
             existingInstance
                 .updateConfig(candidate.getConfig())
+                .resetTags()
                 .bulkSetTags(candidate.getTags())
                 .updateMetadata(candidate.frequency, candidate.outsideWorkingHours, candidate.timers);
         }
