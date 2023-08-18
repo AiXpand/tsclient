@@ -38,12 +38,14 @@ import { REST_CUSTOM_EXEC_SIGNATURE } from './abstract.rest.custom.exec.plugin';
 import { BufferServiceInterface } from './models/buffer.service.interface';
 import { AiXpandMemoryBufferService } from './aixpand.memory.buffer.service';
 import { VideoFile } from './models/dct/video.file.dct';
+import { SingleCropMetaStream } from './models/dct/single.crop.meta.stream';
 
 export enum DataCaptureThreadType {
     DUMMY_STREAM = 'ADummyStructStream',
     VIDEO_STREAM = 'VideoStream',
     VIDEO_FILE_MAP_REDUCE = 'video_file_map_reduce',
     VIDEO_FILE = 'VideoFile',
+    SINGLE_CROP_META_STREAM = 'SingleCropMetaStream',
     META_STREAM = 'MetaStream',
     VOID_STREAM = 'VOID',
 }
@@ -214,6 +216,7 @@ export class AiXpandClient extends EventEmitter2 {
     private registeredDCTs: Dictionary<any> = {
         [`${DataCaptureThreadType.VIDEO_STREAM}`]: VideoStream,
         [`${DataCaptureThreadType.META_STREAM}`]: MetaStream,
+        [`${DataCaptureThreadType.SINGLE_CROP_META_STREAM}`]: SingleCropMetaStream,
         [`${DataCaptureThreadType.DUMMY_STREAM}`]: DummyStream,
         [`${DataCaptureThreadType.VIDEO_FILE_MAP_REDUCE}`]: VideoFileMultiNode,
         [`${DataCaptureThreadType.VIDEO_FILE}`]: VideoFile,
