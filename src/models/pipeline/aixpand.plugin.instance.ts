@@ -72,6 +72,13 @@ export class AiXpandPluginInstance<T extends object> {
     private tags: Dictionary<string> = {};
 
     /**
+     * Instance working hours.
+     *
+     * @private
+     */
+    private schedule: Record<string, []> = null;
+
+    /**
      * Instance callback. Whenever a specific callback is set for an instance, the pipeline response
      * will be directed to that callback instead of being bubbled as a client event.
      *
@@ -228,7 +235,17 @@ export class AiXpandPluginInstance<T extends object> {
         return this;
     }
 
-    getConfig() {
+    setSchedule(schedule: Record<string, []>) {
+        this.schedule = schedule;
+
+        return this;
+    }
+
+    getSchedule(): Record<string, []> {
+        return this.schedule;
+    }
+
+    getConfig(): T {
         return this.config;
     }
 

@@ -17,7 +17,6 @@ import {
 } from '../models';
 import { deserialize } from './aixp.deserializer';
 import { REST_CUSTOM_EXEC_SIGNATURE } from '../abstract.rest.custom.exec.plugin';
-import { AiXpandAlerter } from '../models/aixpand.alerter';
 import { decode } from './aixp.pseudopy.helpers';
 
 export const transformer = async (
@@ -261,13 +260,17 @@ const heartbeatTransformer = (
                         instance.INSTANCE_ID,
                         deserialize(instance, instanceClass),
                         null,
-                        instance.ALERT_DATA_COUNT ? deserialize(instance, AiXpandAlerter) : null,
+                        null,
                     );
 
                     if (instance.ID_TAGS) {
                         Object.keys(instance.ID_TAGS).forEach((key) => {
                             pluginInstance.addTag(key, instance.ID_TAGS[key]);
                         });
+                    }
+
+                    if (instance.WORKING_HOURS) {
+                        pluginInstance.setSchedule(instance.WORKING_HOURS);
                     }
 
                     const instanceStats = rawMessage.metadata.active_plugins

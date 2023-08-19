@@ -16,6 +16,7 @@ export const serialize = <T extends object>(
     signature = null,
     tags: any = {},
     linkInfo: null | LinkInfo<T> = null,
+    schedule: any = null,
     changeset = null,
 ): any => {
     if (
@@ -71,6 +72,10 @@ export const serialize = <T extends object>(
                 (instance: AiXpandPluginInstance<T>) => [instance.getStreamId(), instance.id],
             );
         }
+
+        if (schedule) {
+            serializedObject['WORKING_HOURS'] = schedule;
+        }
     } else if (!isDataCaptureThread && !isPluginInstanceAlerter) {
         const partSignatures = Reflect.getMetadata('signatures', instance.constructor);
         if (!partSignatures.includes(ANY_PLUGIN_SIGNATURE) && !partSignatures.includes(signature) && !partSignatures.includes(REST_CUSTOM_EXEC_SIGNATURE)) {
@@ -100,12 +105,13 @@ export const serialize = <T extends object>(
             const embeddedConfig = embeddedProperties.get(key);
             if (embeddedConfig?.options.isArray) {
                 serializedObject[property.propertyName] = instance[key].map((item: any) =>
-                    serialize(item, signature, null, null, changesetToPass),
+                    serialize(item, signature, null, null, null, changesetToPass),
                 );
             } else if (embeddedConfig) {
                 serializedObject[property.propertyName] = serialize(
                     instance[key],
                     signature,
+                    null,
                     null,
                     null,
                     changesetToPass,
