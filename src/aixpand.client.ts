@@ -1057,7 +1057,7 @@ export class AiXpandClient extends EventEmitter2 {
      * @param message
      * @private
      */
-    private buildContext(message) {
+    private buildContext(message: AiXPMessage<AiXPPayloadData | AiXPNotificationData>) {
         return <AiXpandClientEventContext>{
             path: message.path,
             pipeline: this.pipelines[message.path[0]][message.path[1]],
@@ -1065,6 +1065,13 @@ export class AiXpandClient extends EventEmitter2 {
             metadata: message.metadata,
             sender: message.sender,
             time: message.time,
+            info: {
+                id: message.id,
+                type: message.type,
+                category: message.category,
+                version: message.version,
+                demoMode: message.demoMode,
+            },
         };
     }
 
