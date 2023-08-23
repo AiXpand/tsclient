@@ -146,7 +146,7 @@ export class VideoFileMultiNode {
                 },
                 {
                     key: 'reconnectable',
-                    type: ['string'],
+                    type: 'string',
                     label: 'Reconnectable',
                     description:
                         'Describes the behavior when the feed disconnects. Allowed values are true, false and KEEPALIVE',
