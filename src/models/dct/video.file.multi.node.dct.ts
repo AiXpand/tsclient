@@ -67,7 +67,7 @@ export class VideoFileMultiNode {
     isLive: boolean;
 
     @Bind('RECONNECTABLE')
-    reconnectable: boolean | string;
+    reconnectable: string;
 
     @Bind('TYPE')
     type: string = DataCaptureThreadType.VIDEO_FILE_MAP_REDUCE;
@@ -146,7 +146,7 @@ export class VideoFileMultiNode {
                 },
                 {
                     key: 'reconnectable',
-                    type: ['boolean', 'string'],
+                    type: ['string'],
                     label: 'Reconnectable',
                     description:
                         'Describes the behavior when the feed disconnects. Allowed values are true, false and KEEPALIVE',

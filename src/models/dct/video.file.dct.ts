@@ -27,7 +27,7 @@ export class VideoFile {
     isLive: boolean;
 
     @Bind('RECONNECTABLE')
-    reconnectable: boolean | string;
+    reconnectable: string;
 
     @Bind('STREAM_WINDOW')
     streamWindow: number;
@@ -108,7 +108,7 @@ export class VideoFile {
                 },
                 {
                     key: 'reconnectable',
-                    type: ['boolean', 'string'],
+                    type: ['string'],
                     label: 'Reconnectable',
                     description:
                         'Describes the behavior when the feed disconnects. Allowed values are true, false and KEEPALIVE',
