@@ -118,7 +118,16 @@ export class AiXpandPipeline {
     }
 
     updateInstance(instance: AiXpandPluginInstance<any>) {
-        const instanceConfig = serialize(instance.getConfig(), null, instance.getTags(), null, instance.getSchedule(), instance.getConfig().getChangeset());
+        const instanceConfig = serialize(
+            instance.getConfig(),
+            null,
+            instance.getTags(),
+            null,
+            instance.getSchedule(),
+            instance.isForcePaused(),
+            instance.getConfig().getChangeset(),
+        );
+
         const message = {
             PAYLOAD: {
                 NAME: instance.getStreamId(),
@@ -189,11 +198,16 @@ export class AiXpandPipeline {
                 };
             }
 
-            const config = serialize(plugin.config, null, plugin.getTags(), linkInfo, plugin.getSchedule());
-            const alerter = plugin.getAlerter() ? serialize(plugin.getAlerter()) : {};
+            const config = serialize(
+                plugin.config,
+                null,
+                plugin.getTags(),
+                linkInfo,
+                plugin.getSchedule(),
+                plugin.isForcePaused(),
+            );
             collection[plugin.signature].push({
                 ...config,
-                ...alerter,
                 INSTANCE_ID: plugin.id,
             });
 

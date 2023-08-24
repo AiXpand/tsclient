@@ -108,6 +108,13 @@ export class AiXpandPluginInstance<T extends object> {
      */
     private pipeline: AiXpandPipeline;
 
+    /**
+     * Flag to be set when the instance is temporarily paused.
+     *
+     * @private
+     */
+    private forcePaused: boolean = false;
+
     constructor(id: string, config: T, callback: CallbackFunction = null, alerter?: AiXpandAlerter) {
         if (!config) {
             return;
@@ -119,14 +126,11 @@ export class AiXpandPluginInstance<T extends object> {
             this.signature = Reflect.getMetadata('signature', config.constructor);
         }
 
-        // if (Reflect.hasMetadata('plugin-instance-alertable', config.constructor) && !alerter) {
-        //     throw new Error(`Alertable plugin instance ${id} does not have an alerter attached.`);
-        // }
-
         this.updateConfig(config);
         this.alerter = alerter;
         this.tags = {};
         this.callback = callback;
+        this.forcePaused = false;
     }
 
     sendCommand(command: any) {
@@ -305,6 +309,22 @@ export class AiXpandPluginInstance<T extends object> {
 
     clearCallback() {
         this.callback = null;
+
+        return this;
+    }
+
+    isForcePaused(): boolean {
+        return this.forcePaused;
+    }
+
+    forcePause() {
+        this.forcePaused = true;
+
+        return this;
+    }
+
+    resumeForcePause() {
+        this.forcePaused = false
 
         return this;
     }

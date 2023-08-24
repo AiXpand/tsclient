@@ -1,13 +1,19 @@
 import 'reflect-metadata';
 import { BindingOptions } from './binding.options';
 
+export const ID_TAGS = 'ID_TAGS';
+export const LINKED_INSTANCES = 'LINKED_INSTANCES';
+export const SINGLE_INSTANCE = 'SINGLE_INSTANCE';
+export const FORCE_PAUSE = 'FORCE_PAUSE';
+export const WORKING_HOURS = 'WORKING_HOURS';
+
 const defaultOptions: BindingOptions = {
     isArray: false,
     nullable: false,
     alwaysSerialize: false,
 };
 
-export const reservedPropertyNames = ['ID_TAGS', 'LINKED_INSTANCES', 'SINGLE_INSTANCE'];
+export const reservedPropertyNames = [ID_TAGS, LINKED_INSTANCES, SINGLE_INSTANCE, FORCE_PAUSE, WORKING_HOURS];
 
 export const Bind = (configPropertyName: string, options: BindingOptions = {}): PropertyDecorator => {
     options = { ...defaultOptions, ...options };

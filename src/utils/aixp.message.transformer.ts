@@ -18,6 +18,7 @@ import {
 import { deserialize } from './aixp.deserializer';
 import { REST_CUSTOM_EXEC_SIGNATURE } from '../abstract.rest.custom.exec.plugin';
 import { decode } from './aixp.pseudopy.helpers';
+import { FORCE_PAUSE, ID_TAGS, WORKING_HOURS } from '../decorators';
 
 export const transformer = async (
     rawMessage,
@@ -263,14 +264,18 @@ const heartbeatTransformer = (
                         null,
                     );
 
-                    if (instance.ID_TAGS) {
-                        Object.keys(instance.ID_TAGS).forEach((key) => {
-                            pluginInstance.addTag(key, instance.ID_TAGS[key]);
+                    if (instance[ID_TAGS]) {
+                        Object.keys(instance[ID_TAGS]).forEach((key) => {
+                            pluginInstance.addTag(key, instance[ID_TAGS][key]);
                         });
                     }
 
-                    if (instance.WORKING_HOURS) {
-                        pluginInstance.setSchedule(instance.WORKING_HOURS);
+                    if (instance[WORKING_HOURS]) {
+                        pluginInstance.setSchedule(instance[WORKING_HOURS]);
+                    }
+
+                    if (instance[FORCE_PAUSE]) {
+                        pluginInstance.forcePause();
                     }
 
                     const instanceStats = rawMessage.metadata.active_plugins

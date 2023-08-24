@@ -1,6 +1,6 @@
 import 'reflect-metadata';
 import { REST_CUSTOM_EXEC_SIGNATURE } from '../abstract.rest.custom.exec.plugin';
-import { BindingOptions } from '../decorators';
+import { BindingOptions, FORCE_PAUSE, ID_TAGS, LINKED_INSTANCES, SINGLE_INSTANCE, WORKING_HOURS } from '../decorators';
 import { AiXpandPluginInstance } from '../models';
 import { ANY_PLUGIN_SIGNATURE } from '../constants';
 
@@ -17,6 +17,7 @@ export const serialize = <T extends object>(
     tags: any = {},
     linkInfo: null | LinkInfo<T> = null,
     schedule: any = null,
+    forcePaused: boolean = null,
     changeset = null,
 ): any => {
     if (
@@ -50,31 +51,35 @@ export const serialize = <T extends object>(
         }
 
         if (Object.keys(tags).length) {
-            serializedObject['ID_TAGS'] = {};
+            serializedObject[ID_TAGS] = {};
             Object.keys(tags).forEach((key) => {
-                serializedObject['ID_TAGS'][`${key}`] = tags[key];
+                serializedObject[ID_TAGS][`${key}`] = tags[key];
             });
         }
 
         if (linkInfo && linkInfo.links.collector === null && linkInfo.links.instances.length === 0) {
             // single instance
-            serializedObject['SINGLE_INSTANCE'] = true;
+            serializedObject[SINGLE_INSTANCE] = true;
         }
 
         if (linkInfo && linkInfo.links.collector !== null) {
             // subordinated linked instance
-            serializedObject['SINGLE_INSTANCE'] = false;
+            serializedObject[SINGLE_INSTANCE] = false;
         }
 
         if (linkInfo && linkInfo.links.instances.length > 0) {
             // main linked instance
-            serializedObject['LINKED_INSTANCES'] = linkInfo.links.instances.map(
+            serializedObject[LINKED_INSTANCES] = linkInfo.links.instances.map(
                 (instance: AiXpandPluginInstance<T>) => [instance.getStreamId(), instance.id],
             );
         }
 
         if (schedule) {
-            serializedObject['WORKING_HOURS'] = schedule;
+            serializedObject[WORKING_HOURS] = schedule;
+        }
+
+        if (forcePaused !== null) {
+            serializedObject[FORCE_PAUSE] = forcePaused;
         }
     } else if (!isDataCaptureThread && !isPluginInstanceAlerter) {
         const partSignatures = Reflect.getMetadata('signatures', instance.constructor);
@@ -105,12 +110,13 @@ export const serialize = <T extends object>(
             const embeddedConfig = embeddedProperties.get(key);
             if (embeddedConfig?.options.isArray) {
                 serializedObject[property.propertyName] = instance[key].map((item: any) =>
-                    serialize(item, signature, null, null, null, changesetToPass),
+                    serialize(item, signature, null, null, null, null, changesetToPass),
                 );
             } else if (embeddedConfig) {
                 serializedObject[property.propertyName] = serialize(
                     instance[key],
                     signature,
+                    null,
                     null,
                     null,
                     null,
