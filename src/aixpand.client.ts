@@ -340,7 +340,7 @@ export class AiXpandClient extends EventEmitter2 {
                         .replace(':namespace:', this.aixpNamespace)
                         .replace(':group:', groupPrefix);
 
-                    this.mqttClient.unsubscribe(topic, {}, () => {
+                    this.mqttClient.unsubscribe(topic, { qos: 2 }, () => {
                         topicSubscriptionStatus[eventName] = true;
 
                         this.emit(AiXpandClientEvent.AIXP_CLIENT_SYS_TOPIC_UNSUBSCRIBE, null, {
