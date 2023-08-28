@@ -545,6 +545,14 @@ export class AiXpandClient extends EventEmitter2 {
      * @return AiXpandPipeline the pipeline to return
      */
     getPipeline(node: string, streamId: string): AiXpandPipeline {
+        if (!Object.keys(this.fleet).includes(node)) {
+            throw new AiXpandException(`Node ${node} is not registered in the working fleet.`);
+        }
+
+        if (!this.pipelines[node]) {
+            throw new AiXpandException(`Node ${node} is either offline or no hartbeat has been witnessed yet.`);
+        }
+
         return this.pipelines[node][streamId] ?? null;
     }
 
