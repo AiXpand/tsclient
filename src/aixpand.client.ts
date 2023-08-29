@@ -876,7 +876,7 @@ export class AiXpandClient extends EventEmitter2 {
 
         const timeout = message.data.ee.heartbeatInterval ?? this.options.offlineTimeout;
 
-        this.markAsSeen(message.sender.host, timeout);
+        this.markAsSeen(message.sender.host, timeout * 2);
         this.hydrateDCTs(message);
         this.hydrateInstances(message);
         this.linkInstances(message);
