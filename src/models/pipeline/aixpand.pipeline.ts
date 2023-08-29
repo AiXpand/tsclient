@@ -39,7 +39,7 @@ export class AiXpandPipeline {
      *
      * @private
      */
-    private readonly client: AiXpandClient;
+    readonly client: AiXpandClient;
 
     constructor(dct: AiXpandDataCaptureThread<any> = null, node: string, client: AiXpandClient) {
         this.node = node;
@@ -76,7 +76,7 @@ export class AiXpandPipeline {
             this.instances.push(candidate);
         } else {
             existingInstance
-                .updateConfig(candidate.getConfig())
+                .updateConfig(candidate.getConfig(false))
                 .resetTags()
                 .bulkSetTags(candidate.getTags())
                 .updateMetadata(candidate.frequency, candidate.outsideWorkingHours, candidate.timers);
@@ -119,13 +119,13 @@ export class AiXpandPipeline {
 
     updateInstance(instance: AiXpandPluginInstance<any>) {
         const instanceConfig = serialize(
-            instance.getConfig(),
+            instance.getConfig(false),
             null,
             instance.getTags(),
             null,
             instance.getSchedule(),
             instance.isForcePaused(),
-            instance.getConfig().getChangeset(),
+            instance.getConfig(false).getChangeset(),
         );
 
         const message = {

@@ -249,8 +249,23 @@ export class AiXpandPluginInstance<T extends object> {
         return this.schedule;
     }
 
-    getConfig(): T {
-        return this.config;
+    getSchema() {
+        return this.pipeline.client.getPluginSchema(this.signature);
+    }
+
+    getConfig(clean = true): T | any {
+        if (!clean) {
+            return this.config;
+        }
+
+        const schema = this.getSchema()?.fields ?? [];
+        const cleanConfig = {};
+
+        schema.forEach((fieldDefinition) => {
+            cleanConfig[fieldDefinition.key] = this.config['key'] ?? fieldDefinition.default;
+        });
+
+        return cleanConfig;
     }
 
     updateConfig(config: T) {
