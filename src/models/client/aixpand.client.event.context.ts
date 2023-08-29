@@ -7,7 +7,7 @@ export type AiXPContextInfo = {
     category: string;
     version: string;
     demoMode: boolean;
-}
+};
 
 export type AiXpandClientEventContext = {
     path: string[];

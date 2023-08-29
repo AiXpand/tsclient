@@ -530,6 +530,8 @@ export class AiXpandClient extends EventEmitter2 {
      * @return Dictionary<AiXpandPipeline> the pipelines
      */
     getHostPipelines(node: string) {
+        this.checkHost(node);
+
         return Object.keys(this.pipelines[node]).map((id) => ({
             name: id,
             dct: this.pipelines[node][id].getDataCaptureThread(),
@@ -545,13 +547,7 @@ export class AiXpandClient extends EventEmitter2 {
      * @return AiXpandPipeline the pipeline to return
      */
     getPipeline(node: string, streamId: string): AiXpandPipeline {
-        if (!Object.keys(this.fleet).includes(node)) {
-            throw new AiXpandException(`Node ${node} is not registered in the working fleet.`);
-        }
-
-        if (!this.pipelines[node]) {
-            throw new AiXpandException(`Node ${node} is either offline or no hartbeat has been witnessed yet.`);
-        }
+        this.checkHost(node);
 
         return this.pipelines[node][streamId] ?? null;
     }
@@ -563,6 +559,8 @@ export class AiXpandClient extends EventEmitter2 {
      * @return Dictionary<AiXpandDataCaptureThread<any>> a dictionary of the data capture threads.
      */
     getHostDataCaptureThreads(node: string): Dictionary<AiXpandDataCaptureThread<any>> {
+        this.checkHost(node);
+
         return this.dataCaptureThreads[node];
     }
 
@@ -977,8 +975,6 @@ export class AiXpandClient extends EventEmitter2 {
                 break;
             case AiXpNotificationType.ABNORMAL:
             case AiXpNotificationType.EXCEPTION:
-                console.dir(message, { depth: null });
-
                 pending.onFail(message);
                 break;
         }
@@ -1109,12 +1105,25 @@ export class AiXpandClient extends EventEmitter2 {
         }
 
         this.timeoutCallbacks[engine] = {
-            timer: setTimeout(() => {
-                this.emit(AiXpandClientEvent.AIXP_ENGINE_OFFLINE, {
-                    executionEngine: engine,
-                });
-            }, (timeout + 1) * 1000), // adding one second to account for possible network delays
+            timer: setTimeout(
+                () => {
+                    this.emit(AiXpandClientEvent.AIXP_ENGINE_OFFLINE, {
+                        executionEngine: engine,
+                    });
+                },
+                (timeout + 1) * 1000,
+            ), // adding one second to account for possible network delays
             timeout: timeout,
         };
+    }
+
+    private checkHost(host: string) {
+        if (!Object.keys(this.fleet).includes(host)) {
+            throw new AiXpandException(`Node ${host} is not registered in the working fleet.`);
+        }
+
+        if (!this.pipelines[host]) {
+            throw new AiXpandException(`Node ${host} is either offline or no hartbeat has been witnessed yet.`);
+        }
     }
 }

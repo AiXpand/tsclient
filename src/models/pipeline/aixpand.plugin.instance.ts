@@ -76,7 +76,7 @@ export class AiXpandPluginInstance<T extends object> {
      *
      * @private
      */
-    private schedule: Record<string, []>|Record<string, []>[] = null;
+    private schedule: Record<string, []> | Record<string, []>[] = null;
 
     /**
      * Instance callback. Whenever a specific callback is set for an instance, the pipeline response
@@ -239,13 +239,13 @@ export class AiXpandPluginInstance<T extends object> {
         return this;
     }
 
-    setSchedule(schedule: Record<string, []>|Record<string, []>[]) {
+    setSchedule(schedule: Record<string, []> | Record<string, []>[]) {
         this.schedule = schedule;
 
         return this;
     }
 
-    getSchedule(): Record<string, []>|Record<string, []>[] {
+    getSchedule(): Record<string, []> | Record<string, []>[] {
         return this.schedule;
     }
 
@@ -324,7 +324,7 @@ export class AiXpandPluginInstance<T extends object> {
     }
 
     resumeForcePause() {
-        this.forcePaused = false
+        this.forcePaused = false;
 
         return this;
     }

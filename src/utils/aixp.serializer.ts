@@ -69,9 +69,10 @@ export const serialize = <T extends object>(
 
         if (linkInfo && linkInfo.links.instances.length > 0) {
             // main linked instance
-            serializedObject[LINKED_INSTANCES] = linkInfo.links.instances.map(
-                (instance: AiXpandPluginInstance<T>) => [instance.getStreamId(), instance.id],
-            );
+            serializedObject[LINKED_INSTANCES] = linkInfo.links.instances.map((instance: AiXpandPluginInstance<T>) => [
+                instance.getStreamId(),
+                instance.id,
+            ]);
         }
 
         if (schedule) {
@@ -83,7 +84,11 @@ export const serialize = <T extends object>(
         }
     } else if (!isDataCaptureThread && !isPluginInstanceAlerter) {
         const partSignatures = Reflect.getMetadata('signatures', instance.constructor);
-        if (!partSignatures.includes(ANY_PLUGIN_SIGNATURE) && !partSignatures.includes(signature) && !partSignatures.includes(REST_CUSTOM_EXEC_SIGNATURE)) {
+        if (
+            !partSignatures.includes(ANY_PLUGIN_SIGNATURE) &&
+            !partSignatures.includes(signature) &&
+            !partSignatures.includes(REST_CUSTOM_EXEC_SIGNATURE)
+        ) {
             console.log(
                 `Cannot serialize "${signature}"; Found EmbeddedConfig without "${signature}" registered signature.`,
             );
