@@ -76,7 +76,7 @@ export class AiXpandPipeline {
             this.instances.push(candidate);
         } else {
             existingInstance
-                .updateConfig(candidate.getConfig(false))
+                .setConfig(candidate.getConfig(false))
                 .resetTags()
                 .bulkSetTags(candidate.getTags())
                 .updateMetadata(candidate.frequency, candidate.outsideWorkingHours, candidate.timers);
@@ -125,7 +125,7 @@ export class AiXpandPipeline {
             null,
             instance.getSchedule(),
             instance.isForcePaused(),
-            instance.getConfig(false).getChangeset(),
+            instance.getChangeSet(),
         );
 
         const message = {
@@ -138,7 +138,16 @@ export class AiXpandPipeline {
             ACTION: AiXpandCommandAction.UPDATE_PIPELINE_INSTANCE,
         };
 
-        return this.client.publish(this.node, message);
+        return this.client.publish(this.node, message).then(
+            (response) => {
+                instance.clearChangeset();
+
+                return response;
+            },
+            (err) => {
+                return err;
+            },
+        );
     }
 
     deploy(session: string | null = null) {

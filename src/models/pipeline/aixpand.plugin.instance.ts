@@ -115,6 +115,8 @@ export class AiXpandPluginInstance<T extends object> {
      */
     private forcePaused: boolean = false;
 
+    private pendingChanges = {};
+
     constructor(id: string, config: T, callback: CallbackFunction = null, alerter?: AiXpandAlerter) {
         if (!config) {
             return;
@@ -126,7 +128,7 @@ export class AiXpandPluginInstance<T extends object> {
             this.signature = Reflect.getMetadata('signature', config.constructor);
         }
 
-        this.updateConfig(config);
+        this.config = config;
         this.alerter = alerter;
         this.tags = {};
         this.callback = callback;
@@ -253,7 +255,7 @@ export class AiXpandPluginInstance<T extends object> {
         return this.pipeline.client.getPluginSchema(this.signature);
     }
 
-    getConfig(clean = true): T | any {
+    getConfig(clean = true) {
         if (!clean) {
             return this.config;
         }
@@ -268,8 +270,32 @@ export class AiXpandPluginInstance<T extends object> {
         return cleanConfig;
     }
 
-    updateConfig(config: T) {
-        this.config = createChangeTrackingProxy(config);
+    updateConfig(partialConfig) {
+        const config = createChangeTrackingProxy(this.config);
+
+        Object.keys(partialConfig).forEach((key) => {
+            config[key] = partialConfig[key];
+        });
+
+        this.config = config;
+        // @ts-ignore
+        this.pendingChanges = config.getChangeset();
+
+        return this;
+    }
+
+    getChangeSet() {
+        return this.pendingChanges;
+    }
+
+    clearChangeset() {
+        this.pendingChanges = {};
+
+        return this;
+    }
+
+    setConfig(config: T) {
+        this.config = config;
 
         return this;
     }
