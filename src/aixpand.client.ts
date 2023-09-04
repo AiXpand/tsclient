@@ -2,7 +2,7 @@ import 'reflect-metadata';
 import { EventEmitter2 } from 'eventemitter2';
 import * as mqtt from 'mqtt';
 import { MqttClient } from 'mqtt';
-import {concatMap, filter, fromEvent, map, Observable, partition, tap} from 'rxjs';
+import { concatMap, filter, fromEvent, map, Observable, partition, tap } from 'rxjs';
 import { plainToInstance } from 'class-transformer';
 import {
     AiXpandClientEvent,
@@ -823,12 +823,11 @@ export class AiXpandClient extends EventEmitter2 {
                 }),
             )
             .pipe(
-                tap(
-                (message) => {
+                tap((message) => {
                     if (
                         message.EE_PAYLOAD_PATH &&
-                        message.EE_PAYLOAD_PATH[1]?.toLowerCase() === "admin_pipeline" &&
-                        message.EE_PAYLOAD_PATH[2]?.toLowerCase() === "net_mon_01"
+                        message.EE_PAYLOAD_PATH[1]?.toLowerCase() === 'admin_pipeline' &&
+                        message.EE_PAYLOAD_PATH[2]?.toLowerCase() === 'net_mon_01'
                     ) {
                         const keys = Object.keys(message.data.specificValue?.current_network ?? {});
                         if (keys.length > 0) {
@@ -840,8 +839,7 @@ export class AiXpandClient extends EventEmitter2 {
                             };
                         }
                     }
-                },
-                )
+                }),
             )
             .pipe(
                 filter((message) => {
