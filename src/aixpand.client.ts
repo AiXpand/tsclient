@@ -2,7 +2,7 @@ import 'reflect-metadata';
 import { EventEmitter2 } from 'eventemitter2';
 import * as mqtt from 'mqtt';
 import { MqttClient } from 'mqtt';
-import { concatMap, filter, fromEvent, map, Observable, partition } from 'rxjs';
+import {concatMap, filter, fromEvent, map, Observable, partition, tap} from 'rxjs';
 import { plainToInstance } from 'class-transformer';
 import {
     AiXpandClientEvent,
@@ -222,6 +222,8 @@ export class AiXpandClient extends EventEmitter2 {
         [`${DataCaptureThreadType.VIDEO_FILE}`]: VideoFile,
         [`${DataCaptureThreadType.VOID_STREAM}`]: Void,
     };
+
+    private networkStatus: Dictionary<any> = {};
 
     constructor(options: AiXpandClientOptions) {
         super(options.emitterOptions ?? {});
@@ -684,6 +686,30 @@ export class AiXpandClient extends EventEmitter2 {
     }
 
     /**
+     * This method will return the network status for a specific supervisor.
+     * @param supervisor
+     */
+    getNetworkStatus(supervisor?: string): any {
+        if (supervisor && this.networkStatus[supervisor]) {
+            return this.networkStatus[supervisor];
+        }
+
+        let maxLen = -1;
+        let maxLenSupervisor = null;
+
+        const supervisors = Object.keys(this.networkStatus);
+        for (const s of supervisors) {
+            const sKeys = Object.keys(this.networkStatus[s].status);
+            if (sKeys.length > maxLen) {
+                maxLen = sKeys.length;
+                maxLenSupervisor = s;
+            }
+        }
+
+        return this.networkStatus[maxLenSupervisor];
+    }
+
+    /**
      * Internal method for connecting to the AiXpand MQTT network.
      *
      * @param options
@@ -795,6 +821,27 @@ export class AiXpandClient extends EventEmitter2 {
                     // filter out messages of unknown formats
                     return message.EE_FORMATTER === 'cavi2';
                 }),
+            )
+            .pipe(
+                tap(
+                (message) => {
+                    if (
+                        message.EE_PAYLOAD_PATH &&
+                        message.EE_PAYLOAD_PATH[1]?.toLowerCase() === "admin_pipeline" &&
+                        message.EE_PAYLOAD_PATH[2]?.toLowerCase() === "net_mon_01"
+                    ) {
+                        const keys = Object.keys(message.data.specificValue?.current_network ?? {});
+                        if (keys.length > 0) {
+                            const supervisorName = message.EE_PAYLOAD_PATH[0];
+                            this.networkStatus[supervisorName] = {
+                                name: supervisorName,
+                                status: message.data.specificValue.current_network,
+                                timestamp: new Date(message.time.hostTime),
+                            };
+                        }
+                    }
+                },
+                )
             )
             .pipe(
                 filter((message) => {
