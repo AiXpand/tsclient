@@ -264,7 +264,7 @@ export class AiXpandPluginInstance<T extends object> {
         const cleanConfig = {};
 
         schema.forEach((fieldDefinition) => {
-            cleanConfig[fieldDefinition.key] = this.config['key'] ?? fieldDefinition.default;
+            cleanConfig[fieldDefinition.key] = this.config[fieldDefinition.key] ?? fieldDefinition.default;
         });
 
         return cleanConfig;
