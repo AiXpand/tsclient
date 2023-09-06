@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsString } from 'class-validator';
+import { IsNotEmpty, IsNumber, IsString } from 'class-validator';
 
 export class AiXPMessageSender {
     @IsNotEmpty()
@@ -7,9 +7,13 @@ export class AiXPMessageSender {
 
     @IsNotEmpty()
     @IsString()
-    instance: string;
+    version: string;
 
     @IsNotEmpty()
     @IsString()
-    host: string;
+    sender: string;
+
+    @IsNotEmpty()
+    @IsNumber()
+    totalMessages: number;
 }

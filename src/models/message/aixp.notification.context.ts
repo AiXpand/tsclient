@@ -17,6 +17,14 @@ export class AiXPNotificationContext {
     @IsOptional()
     stream?: string | null;
 
+    @IsString()
+    @IsOptional()
+    instance?: string | null;
+
+    @IsString()
+    @IsOptional()
+    signature?: string | null;
+
     @IsBoolean()
     @IsOptional()
     displayed?: boolean;

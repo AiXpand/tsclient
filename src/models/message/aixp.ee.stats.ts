@@ -1,12 +1,71 @@
-import { IsNotEmpty, IsNumber, IsOptional, IsString, ValidateNested } from 'class-validator';
+import { IsDate, IsNotEmpty, IsNumber, IsOptional, IsString, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
 import { AiXPEEVersion } from './aixp.ee.version';
 import { AiXPEECounters } from './aixp.ee.counters';
-import { Dictionary } from '../dictionary';
-import { AiXpandDataCaptureThread } from '../dct';
-import { AiXpandPluginInstance } from '../pipeline';
+
+export class AiXPHeartbeatNetworkStats {
+    @IsOptional()
+    @IsNumber()
+    in: number;
+
+    @IsOptional()
+    @IsNumber()
+    out: number;
+}
+
+export class AiXPHeartbeatLogs {
+    @IsOptional()
+    @IsString()
+    device: string;
+
+    @IsOptional()
+    @IsString()
+    error: string;
+}
+
+export class AiXPStopLogEntry {
+    @IsOptional()
+    @IsNumber()
+    nr: number;
+
+    @IsOptional()
+    @IsString()
+    fromStart: string;
+
+    @IsOptional()
+    @IsDate()
+    when: Date;
+
+    @IsOptional()
+    @IsString()
+    stage: string;
+
+    @IsOptional()
+    @IsDate()
+    resume: Date;
+
+    @IsOptional()
+    @IsString()
+    duration: string;
+
+    @IsOptional()
+    @IsNumber()
+    iter: number;
+}
 
 export class AiXPEEStats {
+    @IsString()
+    @IsNotEmpty()
+    address: string;
+
+    @IsString()
+    @IsNotEmpty()
+    isAlertRam: boolean;
+
+    @IsString()
+    @IsNotEmpty()
+    isSupervisor: boolean;
+
     @IsOptional()
     @IsNumber()
     heartbeatInterval: number;
@@ -30,12 +89,18 @@ export class AiXPEEStats {
     @IsNumber({}, { each: true })
     servingPids: number[];
 
-    @IsOptional()
-    dataCaptureThreads: Dictionary<AiXpandDataCaptureThread<any>>;
+    @ValidateNested()
+    @Type(() => AiXPHeartbeatNetworkStats)
+    network: AiXPHeartbeatNetworkStats;
 
     @IsOptional()
-    activePlugins: AiXpandPluginInstance<any>[];
+    loopsTimings: any;
 
+    @IsString()
     @IsOptional()
-    links: any;
+    timers: string;
+
+    @ValidateNested()
+    @Type(() => AiXPHeartbeatLogs)
+    logs: AiXPHeartbeatLogs;
 }

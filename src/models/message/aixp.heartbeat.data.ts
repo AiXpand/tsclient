@@ -1,11 +1,14 @@
-import { IsIn, IsIP, IsNumber, IsString, ValidateNested } from 'class-validator';
+import { IsIn, IsIP, IsNumber, IsOptional, IsString, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
 import { AiXPData } from './aixp.data';
 import { AiXPMachineMemoryStats } from './aixp.machine.memory.stats';
 import { AiXPMachineDiskStats } from './aixp.machine.disk.stats';
 import { AiXPCPUStats } from './aixp.cpu.stats';
-import { AiXPEEStats } from './aixp.ee.stats';
+import { AiXPEEStats, AiXPStopLogEntry } from './aixp.ee.stats';
 import { AiXPGPUsStats } from './aixp.gpu.stats';
+import { Dictionary } from '../dictionary';
+import { AiXpandDataCaptureThread } from '../dct';
+import { AiXpandPluginInstance } from '../pipeline';
 
 export class AiXPHeartbeatData extends AiXPData {
     @IsString()
@@ -32,9 +35,25 @@ export class AiXPHeartbeatData extends AiXPData {
 
     @ValidateNested()
     @Type(() => AiXPEEStats)
-    ee: AiXPEEStats;
+    node: AiXPEEStats;
 
     @ValidateNested()
     @Type(() => AiXPGPUsStats)
     gpus: AiXPGPUsStats;
+
+    @ValidateNested({ each: true })
+    @Type(() => AiXPStopLogEntry)
+    stopLog: AiXPStopLogEntry[];
+
+    @IsOptional()
+    commStats: any;
+
+    @IsOptional()
+    dataCaptureThreads: Dictionary<AiXpandDataCaptureThread<any>>;
+
+    @IsOptional()
+    activePlugins: AiXpandPluginInstance<any>[];
+
+    @IsOptional()
+    links: any;
 }

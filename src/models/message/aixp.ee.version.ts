@@ -7,7 +7,7 @@ export class AiXPEEVersion {
 
     @IsString()
     @IsNotEmpty()
-    engine: string;
+    python: string;
 
     @IsString()
     @IsNotEmpty()

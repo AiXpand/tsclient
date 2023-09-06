@@ -3,7 +3,7 @@ import { IsNotEmpty, IsNumber, IsString } from 'class-validator';
 export class AiXPCPUStats {
     @IsNotEmpty()
     @IsString()
-    name: number;
+    name: string;
 
     @IsNotEmpty()
     @IsNumber()

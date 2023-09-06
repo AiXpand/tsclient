@@ -5,11 +5,11 @@ export class AiXpandMemoryBufferService implements BufferServiceInterface {
     private messages: Dictionary<AiXPMessage<AiXPPayloadData | AiXPNotificationData>[]> = {};
 
     store(message: AiXPMessage<AiXPPayloadData | AiXPNotificationData>) {
-        if (!this.messages[message.sender.host]) {
-            this.messages[message.sender.host] = [];
+        if (!this.messages[message.host.id]) {
+            this.messages[message.host.id] = [];
         }
 
-        this.messages[message.sender.host].push(message);
+        this.messages[message.host.id].push(message);
     }
 
     get(node: string): AiXPMessage<AiXPPayloadData | AiXPNotificationData> | null {

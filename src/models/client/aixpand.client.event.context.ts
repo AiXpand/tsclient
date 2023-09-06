@@ -2,7 +2,7 @@ import { AiXpandPluginInstance, AiXpandPipeline } from '../pipeline';
 import { AiXPMessageSender, AiXPMessageTime } from '../message';
 
 export type AiXPContextInfo = {
-    id: string;
+    id: any;
     type: string;
     category: string;
     version: string;

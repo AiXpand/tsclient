@@ -1,43 +1,45 @@
-import { IsBoolean, IsNotEmpty, IsOptional, IsString, ValidateNested } from 'class-validator';
+import { IsNotEmpty, IsNumber, IsString, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
-import { AiXPMessageSender } from './aixp.message.sender';
 import { AiXPMessageTime } from './aixp.message.time';
 import { AiXPMessageMetadata } from './aixp.message.metadata';
 
-export class AiXPMessage<T> {
-    @IsNotEmpty()
-    path: string[];
-
+export class AiXPMessageHost {
     @IsNotEmpty()
     @IsString()
     id: string;
 
     @IsNotEmpty()
     @IsString()
-    type: string;
+    sender: string;
 
     @IsNotEmpty()
-    @IsString()
-    category: string;
+    @IsNumber()
+    totalMessages: number;
 
     @IsNotEmpty()
     @IsString()
     version: string;
+}
+
+export class AiXPMessage<T> {
+    @IsNotEmpty()
+    @IsNumber()
+    id: number;
 
     @ValidateNested()
-    @Type(() => AiXPMessageSender)
-    sender: AiXPMessageSender;
+    @Type(() => AiXPMessageHost)
+    host: AiXPMessageHost;
+
+    @IsNotEmpty()
+    @IsString()
+    type: string;
+
+    @IsNotEmpty()
+    path: string[];
 
     @ValidateNested()
     @Type(() => AiXPMessageTime)
     time: AiXPMessageTime;
-
-    @IsBoolean()
-    demoMode: boolean;
-
-    @IsString()
-    @IsOptional()
-    format: string;
 
     @ValidateNested()
     @Type(() => AiXPMessageMetadata)

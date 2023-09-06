@@ -3,15 +3,7 @@ import { IsDate, IsOptional } from 'class-validator';
 export class AiXPMessageTime {
     @IsOptional()
     @IsDate()
-    device?: Date;
-
-    @IsOptional()
-    @IsDate()
-    host?: Date;
-
-    @IsOptional()
-    @IsDate()
-    internet?: Date;
+    date?: Date;
 
     @IsOptional()
     timezone?: {
