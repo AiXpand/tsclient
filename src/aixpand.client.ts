@@ -843,11 +843,11 @@ export class AiXpandClient extends EventEmitter2 {
             .pipe(
                 filter((message): boolean => {
                     // filter out messages of unknown formats
-                    const messageFormat =
-                        message.EE_FORMATTER?.toLowerCase() === '' || !message.EE_FORMATTER
-                            ? 'rawNetworkFormat'
-                            : message.EE_FORMATTER.toLowerCase();
-                    return !!this.registeredMessageDecoders[messageFormat];
+                    return (
+                        message.EE_FORMATTER === '' ||
+                        !message.EE_FORMATTER ||
+                        !!this.registeredMessageDecoders[message.EE_FORMATTER.toLowerCase()]
+                    );
                 }),
             )
             .pipe(
