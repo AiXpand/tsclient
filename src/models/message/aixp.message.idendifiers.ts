@@ -1,7 +1,9 @@
 export class AiXPMessageIdentifiers {
-    streamId: string;
-    instanceId: string;
-    payloadId: number;
+    pipeline: string;
+    instance: string;
+    payload: number;
     initiatorId: string;
-    sessionId: string | null;
+    session: string | null;
+    tags: any;
+    collected: any;
 }

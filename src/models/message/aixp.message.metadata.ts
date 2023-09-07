@@ -1,5 +1,6 @@
 import { IsBoolean, IsDate, IsOptional, IsString, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
+import { AiXPMessageIdentifiers } from './aixp.message.idendifiers';
 
 export class AiXpandMessageDetailsMetadata {
     @IsString()
@@ -16,6 +17,12 @@ export class AiXPMessageMetadata {
     @ValidateNested()
     @Type(() => AiXpandMessageDetailsMetadata)
     message: AiXpandMessageDetailsMetadata;
+
+    @IsOptional()
+    identifiers?: AiXPMessageIdentifiers;
+
+    @IsOptional()
+    time?: Date;
 
     @IsString()
     @IsOptional()

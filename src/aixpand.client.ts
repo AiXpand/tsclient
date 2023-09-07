@@ -920,19 +920,15 @@ export class AiXpandClient extends EventEmitter2 {
 
         this.streams[AiXpandEventType.HEARTBEAT] = heartbeatsStream;
         this.streams[AiXpandEventType.NOTIFICATION] = notificationsStream.pipe(
-            filter((message) => {
+            filter((message: AiXPMessage<AiXPNotificationData>) => {
                 // filter out notifications for other initiators
-                // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-                // @ts-ignore
                 return !message.data.context.initiator || message.data.context.initiator === this.initiator;
             }),
         );
         this.streams[AiXpandEventType.PAYLOAD] = payloadsStream.pipe(
-            filter((message) => {
+            filter((message: AiXPMessage<AiXPPayloadData>) => {
                 // filter out messages for other initiators
-                // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-                // @ts-ignore
-                return message.data.identifiers ? message.data.identifiers.initiatorId === this.initiator : false;
+                return message.metadata.identifiers ? message.metadata.identifiers.initiatorId === this.initiator : false;
             }),
         );
     }
@@ -987,15 +983,14 @@ export class AiXpandClient extends EventEmitter2 {
             return;
         }
 
-        const rawPayload = message.data;
-        let payload = JSON.parse(JSON.stringify(rawPayload)); // deep copy hack...
+        let payload = message.data;
         let signature = message.path[2];
-        if (rawPayload.id_tags?.CUSTOM_SIGNATURE) {
-            signature = rawPayload.id_tags?.CUSTOM_SIGNATURE;
+        if (message.metadata.identifiers.tags?.CUSTOM_SIGNATURE) {
+            signature = message.metadata.identifiers.tags?.CUSTOM_SIGNATURE;
         }
 
         if (this.registeredPlugins[signature]?.payload) {
-            payload = deserialize(payload, this.registeredPlugins[signature].payload);
+            payload = deserialize(message.data, this.registeredPlugins[signature].payload);
         }
 
         const context = this.buildContext(message);

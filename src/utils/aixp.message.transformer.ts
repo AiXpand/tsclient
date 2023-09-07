@@ -28,7 +28,7 @@ export const transformer = async (
     plugins: Dictionary<PluginRegistration>,
     registeredDCTs: Dictionary<any>,
 ): Promise<AiXPMessage<any>> => {
-    const message = <AiXPMessage<any>>{
+    let message = <AiXPMessage<any>>{
         id: internalMessage.id,
         host: internalMessage.host,
         type: internalMessage.type,
@@ -46,7 +46,7 @@ export const transformer = async (
             message.data = <AiXPNotificationData>notificationTransformer(internalMessage);
             break;
         default:
-            message.data = <AiXPPayloadData>payloadTransformer(internalMessage);
+            message = <AiXPMessage<AiXPPayloadData>>payloadTransformer(message, internalMessage);
     }
 
     return message;
@@ -216,12 +216,15 @@ const notificationTransformer = (message: AiXpandInternalMessage): AiXPNotificat
     });
 };
 
-const payloadTransformer = (message: AiXpandInternalMessage): AiXPPayloadData => {
+const payloadTransformer = (result: AiXPMessage<AiXPPayloadData>, message: AiXpandInternalMessage): AiXPMessage<AiXPPayloadData> => {
     const data = <AiXpandInternalPayloadData>message.data;
 
-    return <AiXPPayloadData>plainToInstance(AiXPPayloadData, {
-        identifiers: plainToInstance(AiXPMessageIdentifiers, data.identifiers),
+    result.metadata.identifiers = plainToInstance(AiXPMessageIdentifiers, data.identifiers);
+    result.metadata.time = message.time.date;
+
+    result.data = <AiXPPayloadData>plainToInstance(AiXPPayloadData, {
         ...data.data,
-        time: message.time.date,
     });
+
+    return result;
 };
