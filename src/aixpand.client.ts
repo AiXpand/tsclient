@@ -61,6 +61,8 @@ export type ClientOptions = {
     offlineTimeout: number;
 };
 
+export const ADMIN_PIPELINE_NAME = 'admin_pipeline';
+
 /**
  * The AiXpand client handles all communication with the node network. It extends EventEmitter2 in order to be
  * able to emit messages for the consumer systems.
@@ -921,12 +923,20 @@ export class AiXpandClient extends EventEmitter2 {
         this.streams[AiXpandEventType.HEARTBEAT] = heartbeatsStream;
         this.streams[AiXpandEventType.NOTIFICATION] = notificationsStream.pipe(
             filter((message: AiXPMessage<AiXPNotificationData>) => {
+                if (message.path[1] === ADMIN_PIPELINE_NAME) {
+                    return true;
+                }
+
                 // filter out notifications for other initiators
                 return !message.data.context.initiator || message.data.context.initiator === this.initiator;
             }),
         );
         this.streams[AiXpandEventType.PAYLOAD] = payloadsStream.pipe(
             filter((message: AiXPMessage<AiXPPayloadData>) => {
+                if (message.path[1] === ADMIN_PIPELINE_NAME) {
+                    return true;
+                }
+
                 // filter out messages for other initiators
                 return message.metadata.identifiers ? message.metadata.identifiers.initiatorId === this.initiator : false;
             }),
@@ -1072,7 +1082,7 @@ export class AiXpandClient extends EventEmitter2 {
     private hydrateDCTs(message: AiXPMessage<AiXPHeartbeatData>) {
         Object.keys(message.data.dataCaptureThreads).forEach((streamId) => {
             const hbDCTConfig = message.data.dataCaptureThreads[streamId];
-            if (hbDCTConfig.getInitiator() !== this.initiator) {
+            if (hbDCTConfig.getInitiator() !== this.initiator && hbDCTConfig.id !== ADMIN_PIPELINE_NAME) {
                 return;
             }
 
@@ -1150,6 +1160,7 @@ export class AiXpandClient extends EventEmitter2 {
             info: {
                 id: message.id,
                 type: message.type,
+                category: message.metadata.category,
             },
         };
     }

@@ -22,6 +22,7 @@ import {
     AiXpandInternalNotificationData,
     AiXpandInternalPayloadData,
 } from '../decoders/edge.node.message.parser';
+import { ADMIN_PLUGIN_CLASSES, ADMIN_PLUGIN_SIGNATURES } from '../constants';
 
 export const transformer = async (
     internalMessage: AiXpandInternalMessage,
@@ -115,7 +116,7 @@ const heartbeatTransformer = (
 
         if (pipelineDetails.plugins && pipelineDetails.plugins.length > 0) {
             pipelineDetails.plugins.forEach((pluginType) => {
-                if (!plugins[pluginType.SIGNATURE]) {
+                if (!plugins[pluginType.SIGNATURE] && !ADMIN_PLUGIN_SIGNATURES.includes(pluginType.SIGNATURE)) {
                     // unknown plugin type
                     return;
                 }
@@ -130,7 +131,9 @@ const heartbeatTransformer = (
                     }
 
                     let instanceClass;
-                    if (instance.ID_TAGS?.CUSTOM_SIGNATURE) {
+                    if (ADMIN_PLUGIN_SIGNATURES.includes(pluginType.SIGNATURE)) {
+                        instanceClass = ADMIN_PLUGIN_CLASSES[pluginType.SIGNATURE];
+                    } else if (instance.ID_TAGS?.CUSTOM_SIGNATURE) {
                         if (!plugins[instance.ID_TAGS.CUSTOM_SIGNATURE]?.instanceConfig) {
                             // unknown plugin type
                             return;

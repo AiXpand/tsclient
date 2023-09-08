@@ -1,6 +1,6 @@
 {
   "name": "@aixpand/client",
-  "version": "0.20.2",
+  "version": "0.21.0",
   "description": "This is the Typescript client for the AiXpand network.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
