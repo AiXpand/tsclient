@@ -30,7 +30,7 @@ export class DummyStream {
                 instance[`${key}`] = config[`${key}`] ? JSON.stringify(config[`${key}`]) : null;
             }
 
-            if ((instance[`${key}`] === null || instance[`${key}`] === undefined) && !field.optional) {
+            if ((instance[`${key}`] === null || instance[`${key}`] === undefined) && field.required) {
                 throw new Error(`Cannot properly instantiate DCT of type ${schema.type}: ${field.key} is missing.`);
             }
         });
@@ -50,7 +50,7 @@ export class DummyStream {
                     label: 'Cap Resolution',
                     description: 'The maximum acquisition rate for the instance of DCT',
                     default: 1,
-                    optional: false,
+                    required: true,
                 },
                 {
                     key: 'metadata',
@@ -58,7 +58,7 @@ export class DummyStream {
                     label: 'Metadata',
                     description: 'Key-value pairs to be encoded as JSON and attached to the DCT.',
                     default: null,
-                    optional: true,
+                    required: false,
                 },
             ],
         };

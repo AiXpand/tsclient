@@ -57,16 +57,16 @@ export class VideoFileMultiNode {
     @Bind('CAP_RESOLUTION')
     capResolution: number;
 
-    @Bind('DEFAULT_PLUGIN')
+    @Bind('DEFAULT_PLUGIN', { nullable: true })
     defaultPlugin: boolean;
 
     @Bind('URL')
     url: string;
 
-    @Bind('LIVE_FEED')
+    @Bind('LIVE_FEED', { nullable: true })
     isLive: boolean;
 
-    @Bind('RECONNECTABLE')
+    @Bind('RECONNECTABLE', { nullable: true })
     reconnectable: string;
 
     @Bind('TYPE')
@@ -95,7 +95,7 @@ export class VideoFileMultiNode {
                 instance[`${key}`] = config[`${key}`] ? JSON.stringify(config[`${key}`]) : null;
             }
 
-            if ((instance[`${key}`] === null || instance[`${key}`] === undefined) && !field.optional) {
+            if ((instance[`${key}`] === null || instance[`${key}`] === undefined) && field.required) {
                 throw new Error(`Cannot properly instantiate DCT of type ${schema.type}: ${field.key} is missing.`);
             }
         });
@@ -117,8 +117,8 @@ export class VideoFileMultiNode {
                     type: 'integer',
                     label: 'Cap Resolution',
                     description: 'The maximum acquisition rate for the instance of DCT',
-                    default: 50,
-                    optional: false,
+                    default: 20,
+                    required: true,
                 },
                 {
                     key: 'defaultPlugin',
@@ -126,7 +126,7 @@ export class VideoFileMultiNode {
                     label: 'Default Plugin',
                     description: '',
                     default: false,
-                    optional: false,
+                    required: false,
                 },
                 {
                     key: 'url',
@@ -134,7 +134,7 @@ export class VideoFileMultiNode {
                     label: 'URL',
                     description: 'The URL of the video stream source.',
                     default: null,
-                    optional: false,
+                    required: true,
                 },
                 {
                     key: 'isLive',
@@ -142,7 +142,7 @@ export class VideoFileMultiNode {
                     label: 'Is Live Feed',
                     description: 'Flag to signal that the URL provided is of a live feed.',
                     default: true,
-                    optional: false,
+                    required: false,
                 },
                 {
                     key: 'reconnectable',
@@ -150,8 +150,8 @@ export class VideoFileMultiNode {
                     label: 'Reconnectable',
                     description:
                         'Describes the behavior when the feed disconnects. Allowed values are true, false and KEEPALIVE',
-                    default: 'KEEPALIVE',
-                    optional: false,
+                    default: 'YES',
+                    required: false,
                 },
                 {
                     key: 'metadata',
@@ -159,7 +159,7 @@ export class VideoFileMultiNode {
                     label: 'Metadata',
                     description: 'Key-value pairs to be encoded as JSON and attached to the DCT.',
                     default: null,
-                    optional: true,
+                    required: false,
                 },
             ],
         };

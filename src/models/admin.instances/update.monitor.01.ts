@@ -3,7 +3,7 @@ import { Bind, PluginInstance } from '../../decorators';
 import { ADMIN_UPDATE_MONITOR_SIGNATURE } from '../../constants';
 
 @PluginInstance(ADMIN_UPDATE_MONITOR_SIGNATURE)
-export class UpdateMonitor01  extends AiXpandPlugin {
+export class UpdateMonitor01 extends AiXpandPlugin {
     @Bind('PROCESS_DELAY')
     processDelay: number;
 

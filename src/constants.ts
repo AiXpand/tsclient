@@ -18,4 +18,4 @@ export const ADMIN_PLUGIN_CLASSES = {
     [`${ADMIN_NETWORK_MONITOR_SIGNATURE}`]: NetMon01,
     [`${ADMIN_UPDATE_MONITOR_SIGNATURE}`]: UpdateMonitor01,
     [`${ADMIN_MINIO_MONITOR_SIGNATURE}`]: MinioMonit01,
-}
+};

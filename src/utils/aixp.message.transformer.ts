@@ -219,7 +219,10 @@ const notificationTransformer = (message: AiXpandInternalMessage): AiXPNotificat
     });
 };
 
-const payloadTransformer = (result: AiXPMessage<AiXPPayloadData>, message: AiXpandInternalMessage): AiXPMessage<AiXPPayloadData> => {
+const payloadTransformer = (
+    result: AiXPMessage<AiXPPayloadData>,
+    message: AiXpandInternalMessage,
+): AiXPMessage<AiXPPayloadData> => {
     const data = <AiXpandInternalPayloadData>message.data;
 
     result.metadata.identifiers = plainToInstance(AiXPMessageIdentifiers, data.identifiers);

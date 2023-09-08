@@ -42,7 +42,7 @@ export class SingleCropMetaStream {
                 instance[`${key}`] = config[`${key}`] ? JSON.stringify(config[`${key}`]) : null;
             }
 
-            if ((instance[`${key}`] === null || instance[`${key}`] === undefined) && !field.optional) {
+            if ((instance[`${key}`] === null || instance[`${key}`] === undefined) && field.required) {
                 throw new Error(`Cannot properly instantiate DCT of type ${schema.type}: ${field.key} is missing.`);
             }
         });
@@ -62,7 +62,7 @@ export class SingleCropMetaStream {
                     label: 'Collected Pipelines',
                     description: 'The pipelines to collect.',
                     default: null,
-                    optional: false,
+                    required: true,
                 },
                 {
                     key: 'cropBottom',
@@ -70,7 +70,7 @@ export class SingleCropMetaStream {
                     label: 'Crop Bottom',
                     description: 'Bottom coordinate when cropping the original stream.',
                     default: null,
-                    optional: false,
+                    required: true,
                 },
                 {
                     key: 'cropLeft',
@@ -78,7 +78,7 @@ export class SingleCropMetaStream {
                     label: 'Crop Left',
                     description: 'Left coordinate when cropping the original stream.',
                     default: null,
-                    optional: false,
+                    required: true,
                 },
                 {
                     key: 'cropRight',
@@ -86,7 +86,7 @@ export class SingleCropMetaStream {
                     label: 'Crop Right',
                     description: 'Right coordinate when cropping the original stream.',
                     default: null,
-                    optional: false,
+                    required: true,
                 },
                 {
                     key: 'cropTop',
@@ -94,7 +94,7 @@ export class SingleCropMetaStream {
                     label: 'Crop Top',
                     description: 'Top coordinate when cropping the original stream.',
                     default: null,
-                    optional: false,
+                    required: true,
                 },
                 {
                     key: 'metadata',
@@ -102,7 +102,7 @@ export class SingleCropMetaStream {
                     label: 'Metadata',
                     description: 'Key-value pairs to be encoded as JSON and attached to the DCT.',
                     default: null,
-                    optional: true,
+                    required: false,
                 },
             ],
         };

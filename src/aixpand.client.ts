@@ -938,7 +938,9 @@ export class AiXpandClient extends EventEmitter2 {
                 }
 
                 // filter out messages for other initiators
-                return message.metadata.identifiers ? message.metadata.identifiers.initiatorId === this.initiator : false;
+                return message.metadata.identifiers
+                    ? message.metadata.identifiers.initiatorId === this.initiator
+                    : false;
             }),
         );
     }

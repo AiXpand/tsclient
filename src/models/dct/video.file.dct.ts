@@ -17,25 +17,25 @@ export class VideoFile {
     @Bind('CAP_RESOLUTION')
     capResolution: number;
 
-    @Bind('DEFAULT_PLUGIN')
+    @Bind('DEFAULT_PLUGIN', { nullable: true })
     defaultPlugin: boolean;
 
     @Bind('URL')
     url: string;
 
-    @Bind('LIVE_FEED')
+    @Bind('LIVE_FEED', { nullable: true })
     isLive: boolean;
 
-    @Bind('RECONNECTABLE')
+    @Bind('RECONNECTABLE', { nullable: true })
     reconnectable: string;
 
-    @Bind('STREAM_WINDOW')
+    @Bind('STREAM_WINDOW', { nullable: true })
     streamWindow: number;
 
     @Bind('TYPE')
     type: string = DataCaptureThreadType.VIDEO_FILE;
 
-    @Embedded(VideoFileStreamConfigMetadata, 'STREAM_CONFIG_METADATA')
+    @Embedded(VideoFileStreamConfigMetadata, 'STREAM_CONFIG_METADATA', { nullable: true })
     streamConfigMetadata: VideoFileStreamConfigMetadata;
 
     @Bind('_CUSTOM_METADATA', { nullable: true })
@@ -58,7 +58,7 @@ export class VideoFile {
                 instance[`${key}`] = config[`${key}`] ? JSON.stringify(config[`${key}`]) : null;
             }
 
-            if ((instance[`${key}`] === null || instance[`${key}`] === undefined) && !field.optional) {
+            if ((instance[`${key}`] === null || instance[`${key}`] === undefined) && field.required) {
                 throw new Error(`Cannot properly instantiate DCT of type ${schema.type}: ${field.key} is missing.`);
             }
         });
@@ -80,7 +80,7 @@ export class VideoFile {
                     label: 'Cap Resolution',
                     description: 'The maximum acquisition rate for the instance of DCT',
                     default: 50,
-                    optional: false,
+                    required: true,
                 },
                 {
                     key: 'defaultPlugin',
@@ -88,7 +88,7 @@ export class VideoFile {
                     label: 'Default Plugin',
                     description: '',
                     default: false,
-                    optional: false,
+                    required: false,
                 },
                 {
                     key: 'url',
@@ -96,7 +96,7 @@ export class VideoFile {
                     label: 'URL',
                     description: 'The URL of the video stream source.',
                     default: null,
-                    optional: false,
+                    required: true,
                 },
                 {
                     key: 'isLive',
@@ -104,7 +104,7 @@ export class VideoFile {
                     label: 'Is Live Feed',
                     description: 'Flag to signal that the URL provided is of a live feed.',
                     default: true,
-                    optional: false,
+                    required: false,
                 },
                 {
                     key: 'reconnectable',
@@ -112,8 +112,8 @@ export class VideoFile {
                     label: 'Reconnectable',
                     description:
                         'Describes the behavior when the feed disconnects. Allowed values are true, false and KEEPALIVE',
-                    default: 'KEEPALIVE',
-                    optional: false,
+                    default: 'YES',
+                    required: false,
                 },
                 {
                     key: 'streamWindow',
@@ -121,7 +121,7 @@ export class VideoFile {
                     label: 'Stream Window',
                     description: '',
                     default: 1,
-                    optional: false,
+                    required: false,
                 },
                 {
                     key: 'metadata',
@@ -129,7 +129,7 @@ export class VideoFile {
                     label: 'Metadata',
                     description: 'Key-value pairs to be encoded as JSON and attached to the DCT.',
                     default: null,
-                    optional: true,
+                    required: false,
                 },
             ],
         };

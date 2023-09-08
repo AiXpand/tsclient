@@ -3,7 +3,7 @@ import { Bind, PluginInstance } from '../../decorators';
 import { ADMIN_NETWORK_MONITOR_SIGNATURE } from '../../constants';
 
 @PluginInstance(ADMIN_NETWORK_MONITOR_SIGNATURE)
-export class NetMon01  extends AiXpandPlugin {
+export class NetMon01 extends AiXpandPlugin {
     @Bind('SUPERVISOR')
     supervisor: boolean;
 
