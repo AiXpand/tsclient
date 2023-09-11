@@ -111,7 +111,7 @@ export class VideoFile {
                     type: 'string',
                     label: 'Reconnectable',
                     description:
-                        'Describes the behavior when the feed disconnects. Allowed values are true, false and KEEPALIVE',
+                        'Describes the behavior when the feed disconnects. Allowed values are YES, NO and KEEPALIVE',
                     default: 'YES',
                     required: false,
                 },
