@@ -1,6 +1,5 @@
 import { AiXPMessageType } from '../models';
 import { decode } from '../utils';
-import { ADMIN_PIPELINE_NAME } from '../aixpand.client';
 
 const mappedKeys = [
     'EE_TIMESTAMP',
@@ -419,12 +418,10 @@ const rawNetworkHeartbeatFormatter = async (
         const config = { ...pipelineConfig };
         delete config.PLUGINS;
 
-        if (config.INITIATOR_ID === initiatorId || pipelineName === ADMIN_PIPELINE_NAME) {
-            parsed.pipelinesConfig.set(pipelineName, <PipelineConfigData>{
-                config: config,
-                plugins: pluginsConfig,
-            });
-        }
+        parsed.pipelinesConfig.set(pipelineName, <PipelineConfigData>{
+            config: config,
+            plugins: pluginsConfig,
+        });
     });
 
     if (originalMessage.ACTIVE_PLUGINS) {

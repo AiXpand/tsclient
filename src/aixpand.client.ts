@@ -1084,9 +1084,6 @@ export class AiXpandClient extends EventEmitter2 {
     private hydrateDCTs(message: AiXPMessage<AiXPHeartbeatData>) {
         Object.keys(message.data.dataCaptureThreads).forEach((streamId) => {
             const hbDCTConfig = message.data.dataCaptureThreads[streamId];
-            if (hbDCTConfig.getInitiator() !== this.initiator && hbDCTConfig.id !== ADMIN_PIPELINE_NAME) {
-                return;
-            }
 
             // Update the network DCT dictionary
             if (!this.dataCaptureThreads[message.host.id][`${streamId}`]) {
