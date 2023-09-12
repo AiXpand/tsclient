@@ -416,7 +416,9 @@ export class AiXpandClient extends EventEmitter2 {
             delete this.pipelines[engine];
             delete this.dataCaptureThreads[engine];
 
-            clearTimeout(this.timeoutCallbacks[engine].timer);
+            if (!!this.timeoutCallbacks[engine]?.timer) {
+                clearTimeout(this.timeoutCallbacks[engine].timer);
+            }
 
             delete this.timeoutCallbacks[engine];
 
@@ -444,6 +446,14 @@ export class AiXpandClient extends EventEmitter2 {
                 error: true,
                 message: `Cannot restart an Execution Engine not in your fleet: "${engine}"`,
             });
+
+            return new Promise((resolve) => {
+                resolve({
+                    data: {
+                        notification: 'Unknown execution engine.',
+                    },
+                });
+            });
         }
 
         const message = {
@@ -458,6 +468,14 @@ export class AiXpandClient extends EventEmitter2 {
             this.emit(AiXpandClientEvent.AIXP_EXCEPTION, {
                 error: true,
                 message: `Cannot shutdown an Execution Engine not in your fleet: "${engine}"`,
+            });
+
+            return new Promise((resolve) => {
+                resolve({
+                    data: {
+                        notification: 'Unknown execution engine.',
+                    },
+                });
             });
         }
 
@@ -903,7 +921,7 @@ export class AiXpandClient extends EventEmitter2 {
                     return plainToInstance(
                         AiXPMessage,
                         await transformer(
-                            await edgeNodeMessageParser(message, this.initiator),
+                            await edgeNodeMessageParser(message),
                             this.registeredPlugins,
                             this.registeredDCTs,
                         ),

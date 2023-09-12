@@ -225,7 +225,7 @@ export type PipelineConfigData = {
     plugins: any[];
 };
 
-export const edgeNodeMessageParser = async (message, initatorId): Promise<AiXpandInternalMessage> => {
+export const edgeNodeMessageParser = async (message): Promise<AiXpandInternalMessage> => {
     let parsedMessage: AiXpandInternalMessage = {
         id: message.EE_MESSAGE_ID,
         host: {
@@ -255,7 +255,7 @@ export const edgeNodeMessageParser = async (message, initatorId): Promise<AiXpan
 
     switch (parsedMessage.type) {
         case AiXPMessageType.HEARTBEAT:
-            parsedMessage = await rawNetworkHeartbeatFormatter(parsedMessage, message, initatorId);
+            parsedMessage = await rawNetworkHeartbeatFormatter(parsedMessage, message);
             break;
         case AiXPMessageType.NOTIFICATION:
             parsedMessage = rawNetworkNotificationFormatter(parsedMessage, message);
@@ -271,7 +271,6 @@ export const edgeNodeMessageParser = async (message, initatorId): Promise<AiXpan
 const rawNetworkHeartbeatFormatter = async (
     parsedMessage,
     originalMessage,
-    initiatorId,
 ): Promise<AiXpandInternalMessage> => {
     if (originalMessage.ENCODED_DATA) {
         const decoded = JSON.parse(await decode(originalMessage.ENCODED_DATA));
