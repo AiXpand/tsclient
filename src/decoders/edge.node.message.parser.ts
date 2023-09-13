@@ -268,10 +268,7 @@ export const edgeNodeMessageParser = async (message): Promise<AiXpandInternalMes
     return parsedMessage;
 };
 
-const rawNetworkHeartbeatFormatter = async (
-    parsedMessage,
-    originalMessage,
-): Promise<AiXpandInternalMessage> => {
+const rawNetworkHeartbeatFormatter = async (parsedMessage, originalMessage): Promise<AiXpandInternalMessage> => {
     if (originalMessage.ENCODED_DATA) {
         const decoded = JSON.parse(await decode(originalMessage.ENCODED_DATA));
         Object.keys(decoded).forEach((key) => {

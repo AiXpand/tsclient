@@ -37,7 +37,7 @@ const aixpOptions: AiXpandClientOptions = {
     plugins: {
         [`${MOCK_SIGNATURE}`]: {
             instanceConfig: MockPlugin,
-        }
+        },
     },
 };
 
@@ -59,7 +59,9 @@ describe('AiXpand Client Tests', () => {
     test('registerMessageDecoder() should add callback for decoder type', () => {
         expect(Object.keys(mockClient['registeredMessageDecoders'])).toEqual(['cavi2']);
 
-        mockClient.registerMessageDecoder('jest', () => { return 'jest-test'; });
+        mockClient.registerMessageDecoder('jest', () => {
+            return 'jest-test';
+        });
 
         expect(Object.keys(mockClient['registeredMessageDecoders'])).toEqual(['cavi2', 'jest']);
         expect(mockClient['registeredMessageDecoders']['jest']()).toEqual('jest-test');
@@ -67,8 +69,8 @@ describe('AiXpand Client Tests', () => {
 
     test('getFleet() should return configured fleet.', () => {
         const expected = [
-            { name: 'test-1', status: { lastSeen: null, online: false }},
-            { name: 'test-2', status: { lastSeen: null, online: false }}
+            { name: 'test-1', status: { lastSeen: null, online: false } },
+            { name: 'test-2', status: { lastSeen: null, online: false } },
         ];
 
         expect(mockClient.getFleet()).toEqual(expected);
@@ -76,15 +78,14 @@ describe('AiXpand Client Tests', () => {
 
     test('registerExecutionEngine() should add to fleet', () => {
         const newEngine = 'test-3';
-        const emitMock = jest.spyOn(AiXpandClient.prototype, 'emit')
-            .mockImplementation((eventName, data) => {
-                return true;
-            });
+        const emitMock = jest.spyOn(AiXpandClient.prototype, 'emit').mockImplementation((eventName, data) => {
+            return true;
+        });
 
         const expectedFleet = [
-            { name: 'test-1', status: { lastSeen: null, online: false }},
-            { name: 'test-2', status: { lastSeen: null, online: false }},
-            { name: 'test-3', status: { lastSeen: null, online: false }},
+            { name: 'test-1', status: { lastSeen: null, online: false } },
+            { name: 'test-2', status: { lastSeen: null, online: false } },
+            { name: 'test-3', status: { lastSeen: null, online: false } },
         ];
 
         mockClient.registerExecutionEngine(newEngine);
@@ -95,14 +96,13 @@ describe('AiXpand Client Tests', () => {
 
     test('registerExecutionEngine() should not add to fleet if called with existing node', () => {
         const newEngine = 'test-2';
-        const emitMock = jest.spyOn(AiXpandClient.prototype, 'emit')
-            .mockImplementation((eventName, data) => {
-                return true;
-            });
+        const emitMock = jest.spyOn(AiXpandClient.prototype, 'emit').mockImplementation((eventName, data) => {
+            return true;
+        });
 
         const expectedFleet = [
-            { name: 'test-1', status: { lastSeen: null, online: false }},
-            { name: 'test-2', status: { lastSeen: null, online: false }},
+            { name: 'test-1', status: { lastSeen: null, online: false } },
+            { name: 'test-2', status: { lastSeen: null, online: false } },
         ];
 
         mockClient.registerExecutionEngine(newEngine);
@@ -113,14 +113,11 @@ describe('AiXpand Client Tests', () => {
 
     test('deregisterExecutionEngine() should remove from fleet', () => {
         const engine = 'test-2';
-        const emitMock = jest.spyOn(AiXpandClient.prototype, 'emit')
-            .mockImplementation((eventName, data) => {
-                return true;
-            });
+        const emitMock = jest.spyOn(AiXpandClient.prototype, 'emit').mockImplementation((eventName, data) => {
+            return true;
+        });
 
-        const expectedFleet = [
-            { name: 'test-1', status: { lastSeen: null, online: false }},
-        ];
+        const expectedFleet = [{ name: 'test-1', status: { lastSeen: null, online: false } }];
 
         mockClient.deregisterExecutionEngine(engine);
 
@@ -130,14 +127,13 @@ describe('AiXpand Client Tests', () => {
 
     test('deregisterExecutionEngine() should not remove from fleet if called with non-existing node', () => {
         const newEngine = 'test-3';
-        const emitMock = jest.spyOn(AiXpandClient.prototype, 'emit')
-            .mockImplementation((eventName, data) => {
-                return true;
-            });
+        const emitMock = jest.spyOn(AiXpandClient.prototype, 'emit').mockImplementation((eventName, data) => {
+            return true;
+        });
 
         const expectedFleet = [
-            { name: 'test-1', status: { lastSeen: null, online: false }},
-            { name: 'test-2', status: { lastSeen: null, online: false }},
+            { name: 'test-1', status: { lastSeen: null, online: false } },
+            { name: 'test-2', status: { lastSeen: null, online: false } },
         ];
 
         mockClient.deregisterExecutionEngine(newEngine);
@@ -147,17 +143,14 @@ describe('AiXpand Client Tests', () => {
     });
 
     test('restartExecutionEngine() should publish RESTART', () => {
-        const publishMock = jest.spyOn(AiXpandClient.prototype, 'publish')
-            .mockImplementation((eventName, data) => {
-                return new Promise(() => {
-                    return 'done.';
-                });
+        const publishMock = jest.spyOn(AiXpandClient.prototype, 'publish').mockImplementation((eventName, data) => {
+            return new Promise(() => {
+                return 'done.';
             });
-        const emitMock = jest.spyOn(AiXpandClient.prototype, 'emit')
-            .mockImplementation((eventName, data) => {
-                return true;
-            });
-
+        });
+        const emitMock = jest.spyOn(AiXpandClient.prototype, 'emit').mockImplementation((eventName, data) => {
+            return true;
+        });
 
         const expectedMessage = {
             ACTION: 'RESTART',
@@ -172,16 +165,14 @@ describe('AiXpand Client Tests', () => {
     });
 
     test('restartExecutionEngine() should not publish RESTART for unknown E2, should emit instead', () => {
-        const publishMock = jest.spyOn(AiXpandClient.prototype, 'publish')
-            .mockImplementation((eventName, data) => {
-                return new Promise(() => {
-                    return 'done.';
-                });
+        const publishMock = jest.spyOn(AiXpandClient.prototype, 'publish').mockImplementation((eventName, data) => {
+            return new Promise(() => {
+                return 'done.';
             });
-        const emitMock = jest.spyOn(AiXpandClient.prototype, 'emit')
-            .mockImplementation((eventName, data) => {
-                return true;
-            });
+        });
+        const emitMock = jest.spyOn(AiXpandClient.prototype, 'emit').mockImplementation((eventName, data) => {
+            return true;
+        });
 
         mockClient.restartExecutionEngine('test-3').then((result) => {
             expect(result).toEqual({
@@ -199,17 +190,14 @@ describe('AiXpand Client Tests', () => {
     });
 
     test('shutdownExecutionEngine() should publish STOP', () => {
-        const publishMock = jest.spyOn(AiXpandClient.prototype, 'publish')
-            .mockImplementation((eventName, data) => {
-                return new Promise(() => {
-                    return 'done.';
-                });
+        const publishMock = jest.spyOn(AiXpandClient.prototype, 'publish').mockImplementation((eventName, data) => {
+            return new Promise(() => {
+                return 'done.';
             });
-        const emitMock = jest.spyOn(AiXpandClient.prototype, 'emit')
-            .mockImplementation((eventName, data) => {
-                return true;
-            });
-
+        });
+        const emitMock = jest.spyOn(AiXpandClient.prototype, 'emit').mockImplementation((eventName, data) => {
+            return true;
+        });
 
         const expectedMessage = {
             ACTION: 'STOP',
@@ -224,16 +212,14 @@ describe('AiXpand Client Tests', () => {
     });
 
     test('shutdownExecutionEngine() should not publish STOP for unknown E2, should emit instead', () => {
-        const publishMock = jest.spyOn(AiXpandClient.prototype, 'publish')
-            .mockImplementation((eventName, data) => {
-                return new Promise(() => {
-                    return 'done.';
-                });
+        const publishMock = jest.spyOn(AiXpandClient.prototype, 'publish').mockImplementation((eventName, data) => {
+            return new Promise(() => {
+                return 'done.';
             });
-        const emitMock = jest.spyOn(AiXpandClient.prototype, 'emit')
-            .mockImplementation((eventName, data) => {
-                return true;
-            });
+        });
+        const emitMock = jest.spyOn(AiXpandClient.prototype, 'emit').mockImplementation((eventName, data) => {
+            return true;
+        });
 
         mockClient.shutdownExecutionEngine('test-3').then((result) => {
             expect(result).toEqual({
@@ -255,49 +241,51 @@ describe('AiXpand Client Tests', () => {
             {
                 type: 'VideoStream',
                 name: 'Video Stream',
-                description: 'A DCT designed to consume real-time video streams.'
+                description: 'A DCT designed to consume real-time video streams.',
             },
             {
                 type: 'MetaStream',
                 name: 'Meta Stream',
-                description: 'A DCT designed to consume other pipelines.'
+                description: 'A DCT designed to consume other pipelines.',
             },
             {
                 type: 'SingleCropMetaStream',
                 name: 'Single Crop Meta Stream',
-                description: 'A DCT designed to consume a crop of other video streams.'
+                description: 'A DCT designed to consume a crop of other video streams.',
             },
             {
                 type: 'ADummyStructStream',
                 name: 'Dummy Stream',
-                description: 'A dummy acquisition stream.'
+                description: 'A dummy acquisition stream.',
             },
             {
                 type: 'video_file_map_reduce',
                 name: 'Video File (Multi Worker)',
-                description: 'A DCT that enables consuming video files in a multi-worker strategy.'
+                description: 'A DCT that enables consuming video files in a multi-worker strategy.',
             },
             {
                 type: 'VideoFile',
                 name: 'Video File',
-                description: 'A DCT dedicated to consuming video files accessible at an URL.'
+                description: 'A DCT dedicated to consuming video files accessible at an URL.',
             },
             {
                 type: 'VOID',
                 name: 'Void',
-                description: 'A DCT to be used when no acquisition is necessary.'
-            }
+                description: 'A DCT to be used when no acquisition is necessary.',
+            },
         ];
 
         expect(mockClient.getRegisteredDCTTypes()).toEqual(expected);
     });
 
     test('getRegisteredPluginTypes()', () => {
-        const expected = [{
-            name: 'Mock Plugin',
-            description: 'Mock Description',
-            signature: MOCK_SIGNATURE,
-        }];
+        const expected = [
+            {
+                name: 'Mock Plugin',
+                description: 'Mock Description',
+                signature: MOCK_SIGNATURE,
+            },
+        ];
 
         expect(mockClient.getRegisteredPluginTypes()).toEqual(expected);
     });

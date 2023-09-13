@@ -10,7 +10,8 @@ if img is not None:
     _result = plugin.int_cache
 _result = None`;
 
-const encoded = 'eJx9j0EKwjAQRfc9xexqEQS3Qj2CFxAZhmSaDjRp6EzF45uAbXeu3+f9/yUG6CFPa5B08WREWVAiBT51jQwghYtCmg0ec+JbA1tYkqEjN/KztUWiKLcvOPdwPSLKhp4HWif7OYuuK7yI/1nuG3VDwEgf1ERZx9m09u96F31dS4sb5c2YJfMkqQ6vIVxYS/Hxbq9qDlQ/fQF/6Voo';
+const encoded =
+    'eJx9j0EKwjAQRfc9xexqEQS3Qj2CFxAZhmSaDjRp6EzF45uAbXeu3+f9/yUG6CFPa5B08WREWVAiBT51jQwghYtCmg0ec+JbA1tYkqEjN/KztUWiKLcvOPdwPSLKhp4HWif7OYuuK7yI/1nuG3VDwEgf1ERZx9m09u96F31dS4sb5c2YJfMkqQ6vIVxYS/Hxbq9qDlQ/fQF/6Voo';
 
 describe('PseudoPy Helpers', () => {
     test('encode()', () => {
@@ -25,4 +26,3 @@ describe('PseudoPy Helpers', () => {
         });
     });
 });
-
