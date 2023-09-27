@@ -238,7 +238,7 @@ export const edgeNodeMessageParser = async (message): Promise<AiXpandInternalMes
         type: message.EE_EVENT_TYPE ? message.EE_EVENT_TYPE.toLowerCase() : 'unknown',
         path: message.EE_PAYLOAD_PATH,
         time: {
-            date: new Date(message.EE_TIMESTAMP),
+            date: new Date(Date.parse(`${message.EE_TIMESTAMP} ${message.EE_TIMEZONE}`)),
             timezone: {
                 utc: message.EE_TIMEZONE.toLowerCase(),
                 name: message.EE_TZ,

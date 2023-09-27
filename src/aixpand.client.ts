@@ -59,6 +59,7 @@ export type EngineStatus = {
 
 export type ClientOptions = {
     offlineTimeout: number;
+    debug: boolean;
 };
 
 export const ADMIN_PIPELINE_NAME = 'admin_pipeline';
@@ -192,6 +193,7 @@ export class AiXpandClient extends EventEmitter2 {
      */
     private options: ClientOptions = {
         offlineTimeout: 60,
+        debug: false,
     };
 
     /**
@@ -260,6 +262,10 @@ export class AiXpandClient extends EventEmitter2 {
 
         if (options?.options?.offlineTimeout) {
             this.options.offlineTimeout = options.options.offlineTimeout;
+        }
+
+        if (options?.options?.debug) {
+            this.options.debug = options.options.debug;
         }
 
         options.fleet.forEach((engine: string) => {
@@ -916,6 +922,13 @@ export class AiXpandClient extends EventEmitter2 {
                 }),
             )
             .pipe(
+                tap((message: any) => {
+                    if (this.options.debug) {
+                        console.dir(message, { depth: null });
+                    }
+                }),
+            )
+            .pipe(
                 concatMap(async (message: AiXpandInternalMessage): Promise<AiXPMessage<any>> => {
                     // transform message to AiXPMessage
                     return plainToInstance(
@@ -927,7 +940,17 @@ export class AiXpandClient extends EventEmitter2 {
                         ),
                     );
                 }),
-            );
+            )
+
+            .pipe(
+                tap((message: any) => {
+                    if (this.options.debug) {
+                        console.dir(message, { depth: null });
+                    }
+                }),
+            )
+
+        ;
 
         const [heartbeatsStream, eventsStream] = partition(
             mainStream,
