@@ -1,6 +1,6 @@
 import 'reflect-metadata';
 import { REST_CUSTOM_EXEC_SIGNATURE } from '../abstract.rest.custom.exec.plugin';
-import { BindingOptions, FORCE_PAUSE, ID_TAGS, LINKED_INSTANCES, SINGLE_INSTANCE, WORKING_HOURS } from '../decorators';
+import { BindingOptions, FORCED_PAUSE, ID_TAGS, LINKED_INSTANCES, SINGLE_INSTANCE, WORKING_HOURS } from '../decorators';
 import { AiXpandPluginInstance } from '../models';
 import { ANY_PLUGIN_SIGNATURE } from '../constants';
 
@@ -80,7 +80,7 @@ export const serialize = <T extends object>(
         }
 
         if (forcePaused !== null) {
-            serializedObject[FORCE_PAUSE] = forcePaused;
+            serializedObject[FORCED_PAUSE] = forcePaused;
         }
     } else if (!isDataCaptureThread && !isPluginInstanceAlerter) {
         const partSignatures = Reflect.getMetadata('signatures', instance.constructor);

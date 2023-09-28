@@ -1249,7 +1249,7 @@ export class AiXpandClient extends EventEmitter2 {
         }
 
         if (!this.pipelines[host]) {
-            throw new AiXpandException(`Node ${host} is either offline or no hartbeat has been witnessed yet.`);
+            throw new AiXpandException(`Node ${host} is either offline or no heartbeat has been witnessed yet.`);
         }
     }
 }
