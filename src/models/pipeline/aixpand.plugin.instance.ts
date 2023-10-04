@@ -135,8 +135,8 @@ export class AiXpandPluginInstance<T extends object> {
         this.forcePaused = false;
     }
 
-    sendCommand(command: any) {
-        const message = {
+    getRawInstanceCommandPayload(command: any) {
+        return {
             PAYLOAD: {
                 NAME: this.streamId,
                 INSTANCE_ID: this.id,
@@ -147,8 +147,12 @@ export class AiXpandPluginInstance<T extends object> {
             },
             ACTION: AiXpandCommandAction.UPDATE_PIPELINE_INSTANCE,
         };
+    }
 
-        return this.pipeline.sendInstanceCommand(message);
+    sendCommand(command: any) {
+        return this.pipeline.sendInstanceCommand(
+            this.getRawInstanceCommandPayload(command),
+        );
     }
 
     getDecoratorMetadata() {
