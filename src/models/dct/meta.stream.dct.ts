@@ -1,23 +1,18 @@
-import { Bind, Embedded, Embedable, DataCaptureThreadConfig } from '../../decorators';
+import { Bind, DataCaptureThreadConfig } from '../../decorators';
 import { DataCaptureThreadType } from '../../aixpand.client';
 import { IsObject } from 'class-validator';
-
-@Embedable()
-export class StreamConfigMetadata {}
+import { convertKeysToAiXpFormat } from '../../utils/aixp.helper.functions';
 
 @DataCaptureThreadConfig()
 export class MetaStream {
-    @Embedded(StreamConfigMetadata, 'STREAM_CONFIG_METADATA')
-    streamConfigMetadata: StreamConfigMetadata;
-
     @Bind('COLLECTED_STREAMS')
     collectedStreams: string[] = [];
 
     @Bind('TYPE')
     type: string = DataCaptureThreadType.META_STREAM;
 
-    @Bind('_CUSTOM_METADATA', { nullable: true })
-    metadata: string;
+    @Bind('STREAM_CONFIG_METADATA', { nullable: true })
+    metadata: any;
 
     static make(config: any) {
         const schema = MetaStream.getSchema();
@@ -33,7 +28,7 @@ export class MetaStream {
             if (key !== 'metadata') {
                 instance[`${key}`] = config[`${key}`] ?? field.default;
             } else {
-                instance[`${key}`] = config[`${key}`] ? JSON.stringify(config[`${key}`]) : null;
+                instance[`${key}`] = config[`${key}`] ? convertKeysToAiXpFormat(config[`${key}`]) : null;
             }
 
             if ((instance[`${key}`] === null || instance[`${key}`] === undefined) && field.required) {

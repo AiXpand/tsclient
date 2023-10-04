@@ -150,9 +150,7 @@ export class AiXpandPluginInstance<T extends object> {
     }
 
     sendCommand(command: any) {
-        return this.pipeline.sendInstanceCommand(
-            this.getRawInstanceCommandPayload(command),
-        );
+        return this.pipeline.sendInstanceCommand(this.getRawInstanceCommandPayload(command));
     }
 
     getDecoratorMetadata() {

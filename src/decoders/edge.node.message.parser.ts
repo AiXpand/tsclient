@@ -1,5 +1,6 @@
 import { AiXPMessageType } from '../models';
 import { decode } from '../utils';
+import { aiXpFormatToCamel } from '../utils/aixp.helper.functions';
 
 const mappedKeys = [
     'EE_TIMESTAMP',
@@ -489,11 +490,11 @@ const rawNetworkPayloadFormatter = (parsedMessage, originalMessage): AiXpandInte
 
     Object.keys(originalMessage).forEach((key) => {
         if (key.startsWith('_P_')) {
-            pluginMetadata.plugin[`${toCamel(key.substring(3))}`] = originalMessage[key];
+            pluginMetadata.plugin[`${aiXpFormatToCamel(key.substring(3))}`] = originalMessage[key];
         }
 
         if (key.startsWith('_C_')) {
-            pluginMetadata.capture[`${toCamel(key.substring(3))}`] = originalMessage[key];
+            pluginMetadata.capture[`${aiXpFormatToCamel(key.substring(3))}`] = originalMessage[key];
         }
     });
 
@@ -522,10 +523,4 @@ const rawNetworkPayloadFormatter = (parsedMessage, originalMessage): AiXpandInte
     parsedMessage.data = <AiXpandInternalPayloadData>parsedData;
 
     return parsedMessage;
-};
-
-const toCamel = (s) => {
-    return s.toLowerCase().replace(/([-_][a-z])/gi, ($1) => {
-        return $1.toUpperCase().replace('-', '').replace('_', '');
-    });
 };

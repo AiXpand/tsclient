@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, jest, test } from '@jest/globals';
-import { AiXpandClient } from '../aixpand.client';
-import { AiXpandClientEvent, AiXpandClientOptions, AiXpandPlugin, CacheType } from '../models';
+import { AiXpandClient } from './aixpand.client';
+import { AiXpandClientEvent, AiXpandClientOptions, AiXpandPlugin, CacheType } from './models';
 
 const MOCK_SIGNATURE = 'MOCK_SIGNATURE';
 // const MOCK_2_SIGNATURE = 'MOCK_2_SIGNATURE';
@@ -257,11 +257,6 @@ describe('AiXpand Client Tests', () => {
                 type: 'ADummyStructStream',
                 name: 'Dummy Stream',
                 description: 'A dummy acquisition stream.',
-            },
-            {
-                type: 'video_file_map_reduce',
-                name: 'Video File (Multi Worker)',
-                description: 'A DCT that enables consuming video files in a multi-worker strategy.',
             },
             {
                 type: 'VideoFile',

@@ -1,6 +1,7 @@
 import { Bind, DataCaptureThreadConfig } from '../../decorators';
 import { DataCaptureThreadType } from '../../aixpand.client';
 import { IsObject } from 'class-validator';
+import { convertKeysToAiXpFormat } from '../../utils/aixp.helper.functions';
 
 @DataCaptureThreadConfig()
 export class VideoStream {
@@ -22,8 +23,8 @@ export class VideoStream {
     @Bind('TYPE')
     type: string = DataCaptureThreadType.VIDEO_STREAM;
 
-    @Bind('_CUSTOM_METADATA', { nullable: true })
-    metadata: string;
+    @Bind('STREAM_CONFIG_METADATA', { nullable: true })
+    metadata: any;
 
     static make(config: any) {
         const schema = VideoStream.getSchema();
@@ -39,7 +40,7 @@ export class VideoStream {
             if (key !== 'metadata') {
                 instance[`${key}`] = config[`${key}`] ?? field.default;
             } else {
-                instance[`${key}`] = config[`${key}`] ? JSON.stringify(config[`${key}`]) : null;
+                instance[`${key}`] = config[`${key}`] ? convertKeysToAiXpFormat(config[`${key}`]) : null;
             }
 
             if ((instance[`${key}`] === null || instance[`${key}`] === undefined) && field.required) {

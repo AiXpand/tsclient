@@ -1,16 +1,7 @@
-import { Bind, Embedable, Embedded, DataCaptureThreadConfig } from '../../decorators';
+import { Bind, DataCaptureThreadConfig } from '../../decorators';
 import { DataCaptureThreadType } from '../../aixpand.client';
 import { IsObject } from 'class-validator';
-
-@Embedable()
-export class VideoFileStreamConfigMetadata {
-    @Bind('NOTIFY_DOWNLOAD_DOWNSTREAM')
-    notifyDownload: boolean;
-
-    constructor(notifyDownload = true) {
-        this.notifyDownload = notifyDownload;
-    }
-}
+import { convertKeysToAiXpFormat } from '../../utils/aixp.helper.functions';
 
 @DataCaptureThreadConfig()
 export class VideoFile {
@@ -35,11 +26,8 @@ export class VideoFile {
     @Bind('TYPE')
     type: string = DataCaptureThreadType.VIDEO_FILE;
 
-    @Embedded(VideoFileStreamConfigMetadata, 'STREAM_CONFIG_METADATA', { nullable: true })
-    streamConfigMetadata: VideoFileStreamConfigMetadata;
-
-    @Bind('_CUSTOM_METADATA', { nullable: true })
-    metadata: string;
+    @Bind('STREAM_CONFIG_METADATA', { nullable: true })
+    metadata: any;
 
     static make(config: any) {
         const schema = VideoFile.getSchema();
@@ -55,15 +43,13 @@ export class VideoFile {
             if (key !== 'metadata') {
                 instance[`${key}`] = config[`${key}`] ?? field.default;
             } else {
-                instance[`${key}`] = config[`${key}`] ? JSON.stringify(config[`${key}`]) : null;
+                instance[`${key}`] = config[`${key}`] ? convertKeysToAiXpFormat(config[`${key}`]) : null;
             }
 
             if ((instance[`${key}`] === null || instance[`${key}`] === undefined) && field.required) {
                 throw new Error(`Cannot properly instantiate DCT of type ${schema.type}: ${field.key} is missing.`);
             }
         });
-
-        instance.streamConfigMetadata = new VideoFileStreamConfigMetadata();
 
         return instance;
     }

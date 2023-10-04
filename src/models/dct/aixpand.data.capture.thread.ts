@@ -2,6 +2,7 @@ import { AiXpandDCTRate, AiXpandDCTStats } from '../pipeline';
 import { AiXpandException } from '../../aixpand.exception';
 import { serialize } from '../../utils';
 import { DataCaptureThread } from '../../decorators';
+import { convertKeysToCamelFormat } from '../../utils/aixp.helper.functions';
 
 /**
  * The definition of AiXpand network's Execution Engine Data Capture Threads (DCTs). A DCT is a thread responsible for
@@ -84,7 +85,7 @@ export class AiXpandDataCaptureThread<T extends object> {
 
     getMetadata() {
         // @ts-ignore
-        return this.config?.metadata ? JSON.parse(this.config.metadata) : null;
+        return this.config?.metadata ? convertKeysToCamelFormat(this.config?.metadata) : null;
     }
 
     /**

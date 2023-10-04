@@ -27,7 +27,6 @@ import {
     MetaStream,
     MqttOptions,
     PluginRegistration,
-    VideoFileMultiNode,
     VideoStream,
     Void,
 } from './models';
@@ -224,7 +223,7 @@ export class AiXpandClient extends EventEmitter2 {
         [`${DataCaptureThreadType.META_STREAM}`]: MetaStream,
         [`${DataCaptureThreadType.SINGLE_CROP_META_STREAM}`]: SingleCropMetaStream,
         [`${DataCaptureThreadType.DUMMY_STREAM}`]: DummyStream,
-        [`${DataCaptureThreadType.VIDEO_FILE_MAP_REDUCE}`]: VideoFileMultiNode,
+        // [`${DataCaptureThreadType.VIDEO_FILE_MAP_REDUCE}`]: VideoFileMultiNode,
         [`${DataCaptureThreadType.VIDEO_FILE}`]: VideoFile,
         [`${DataCaptureThreadType.VOID_STREAM}`]: Void,
     };
@@ -948,9 +947,7 @@ export class AiXpandClient extends EventEmitter2 {
                         console.dir(message, { depth: null });
                     }
                 }),
-            )
-
-        ;
+            );
 
         const [heartbeatsStream, eventsStream] = partition(
             mainStream,
