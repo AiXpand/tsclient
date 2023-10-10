@@ -739,19 +739,40 @@ export class AiXpandClient extends EventEmitter2 {
             return this.networkStatus[supervisor];
         }
 
-        let maxLen = -1;
-        let maxLenSupervisor = null;
+        const supervisors = [];
+        const supervisorNames = Object.keys(this.networkStatus);
+        for (const supervisor of supervisorNames) {
+            supervisors.push(this.networkStatus[supervisor]);
+        }
 
-        const supervisors = Object.keys(this.networkStatus);
-        for (const s of supervisors) {
-            const sKeys = Object.keys(this.networkStatus[s].status);
-            if (sKeys.length > maxLen) {
-                maxLen = sKeys.length;
-                maxLenSupervisor = s;
+        if (!supervisors.length) {
+            return null;
+        }
+
+        // Sort by length DESC
+        supervisors.sort((a, b) => {
+            const entriesA = Object.keys(a.status).length;
+            const entriesB = Object.keys(b.status).length;
+
+            return entriesB - entriesA;
+        });
+
+        let mostRecent = {
+            timestamp: '2004-04-24 10:33:37.082124',
+        };
+        // Search for the most recent (less than 30s) data
+        for (let i = 0; i < supervisors.length; i++) {
+            if (Date.parse(mostRecent.timestamp) - Date.parse(supervisors[i].timestamp) < 0) {
+                mostRecent = supervisors[i];
+            }
+
+            if ((new Date().getTime() - Date.parse(mostRecent.timestamp)) / 1000 < 30) {
+                return mostRecent;
             }
         }
 
-        return this.networkStatus[maxLenSupervisor];
+        // all are older than 30s, return the freshest
+        return mostRecent;
     }
 
     /**
