@@ -40,6 +40,8 @@ import { VideoFile } from './models/dct/video.file.dct';
 import { SingleCropMetaStream } from './models/dct/single.crop.meta.stream';
 import { AiXpandInternalMessage, edgeNodeMessageParser } from './decoders/edge.node.message.parser';
 import { cavi2Decoder } from './decoders/cavi2.decoder';
+import { AiXpandBlockchainOptions, AiXpBC } from './utils/aixp.bc';
+import * as path from 'path';
 
 export enum DataCaptureThreadType {
     DUMMY_STREAM = 'ADummyStructStream',
@@ -59,6 +61,7 @@ export type EngineStatus = {
 export type ClientOptions = {
     offlineTimeout: number;
     debug: boolean;
+    secure: boolean;
 };
 
 export const ADMIN_PIPELINE_NAME = 'admin_pipeline';
@@ -193,6 +196,7 @@ export class AiXpandClient extends EventEmitter2 {
     private options: ClientOptions = {
         offlineTimeout: 60,
         debug: false,
+        secure: true,
     };
 
     /**
@@ -242,6 +246,8 @@ export class AiXpandClient extends EventEmitter2 {
         },
     };
 
+    private blockchainEngine: AiXpBC = null;
+
     constructor(options: AiXpandClientOptions) {
         super(options.emitterOptions ?? {});
 
@@ -267,6 +273,10 @@ export class AiXpandClient extends EventEmitter2 {
             this.options.debug = options.options.debug;
         }
 
+        if (options?.options?.secure === false) {
+            this.options.secure = false;
+        }
+
         options.fleet.forEach((engine: string) => {
             this.fleet[engine] = {
                 online: false,
@@ -286,6 +296,23 @@ export class AiXpandClient extends EventEmitter2 {
         }
 
         this.mqttOptions = options.mqtt;
+
+        const blockchainOptions = <AiXpandBlockchainOptions>{
+            fromFile: options.options.keyPair?.fromFile !== false,
+        };
+
+        if (blockchainOptions.fromFile) {
+            console.log(path.join(__dirname, 'aixp.keys.json'));
+            blockchainOptions.filePath = options.options.keyPair?.filePath || path.join(__dirname, 'aixp.keys.json');
+            blockchainOptions.keyPair = null;
+        } else {
+            blockchainOptions.keyPair = {
+                privateKey: options.options.keyPair.privateKey,
+                publicKey: options.options.keyPair.publicKey,
+            };
+        }
+
+        this.blockchainEngine = new AiXpBC(blockchainOptions);
     }
 
     registerMessageDecoder(name, callback) {
@@ -491,6 +518,29 @@ export class AiXpandClient extends EventEmitter2 {
         return this.publish(engine, message);
     }
 
+    getHeartbeatFromEngine(engine: string) {
+        if (!this.fleet[engine]) {
+            this.emit(AiXpandClientEvent.AIXP_EXCEPTION, {
+                error: true,
+                message: `Cannot get heartbeat from an Execution Engine not in your fleet: "${engine}"`,
+            });
+
+            return new Promise((resolve) => {
+                resolve({
+                    data: {
+                        notification: 'Unknown execution engine.',
+                    },
+                });
+            });
+        }
+
+        const message = {
+            ACTION: 'TIMERS_ONLY_HEARTBEAT',
+        };
+
+        return this.publish(engine, message);
+    }
+
     getRegisteredDCTTypes() {
         return Object.keys(this.registeredDCTs).map((key) => ({
             type: this.registeredDCTs[key].getSchema().type,
@@ -652,7 +702,11 @@ export class AiXpandClient extends EventEmitter2 {
                 onFail: reject,
             });
 
-            this.mqttClient.publish(`${this.aixpNamespace}/${executionEngine}/config`, JSON.stringify(message));
+            this.mqttClient.publish(
+                `${this.aixpNamespace}/${executionEngine}/config`,
+                // @ts-ignore
+                this.blockchainEngine.sign(message),
+            );
         });
     }
 
@@ -867,17 +921,24 @@ export class AiXpandClient extends EventEmitter2 {
         const mainStream = fromEvent(this.mqttClient, 'message')
             .pipe(
                 map((message) => {
-                    // parse JSON
-                    let parsedMessage;
+                    let stringMessage = `{ EE_FORMATTER: 'ignore-this'}`;
                     try {
-                        parsedMessage = JSON.parse(message[2].payload.toString('utf-8').replace(/\bNaN\b/g, 'null'));
+                        stringMessage = message[2].payload.toString('utf-8').replace(/\bNaN\b/g, 'null');
                     } catch (e) {
-                        return {
-                            EE_FORMATTER: 'ignore-this',
-                        };
+                        console.log(e);
                     }
 
-                    return parsedMessage;
+                    return stringMessage;
+                }),
+            )
+            .pipe(
+                filter((message) => {
+                    return !this.options.secure || this.blockchainEngine.verify(message);
+                }),
+            )
+            .pipe(
+                map((message) => {
+                    return JSON.parse(message);
                 }),
             )
             .pipe(

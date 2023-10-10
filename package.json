@@ -1,6 +1,6 @@
 {
   "name": "@aixpand/client",
-  "version": "0.22.1",
+  "version": "0.23.0",
   "description": "This is the Typescript client for the AiXpand network.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -33,11 +33,14 @@
   "homepage": "https://github.com/AiXpand/tsclient#readme",
   "dependencies": {
     "@types/uuid": "^9.0.2",
+    "asn1.js": "^5.4.1",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.0",
     "dotenv": "^16.3.1",
+    "elliptic": "^6.5.4",
     "eventemitter2": "^6.4.9",
     "js-yaml": "^4.1.0",
+    "json-stable-stringify": "^1.0.2",
     "mqtt": "^5.0.3",
     "reflect-metadata": "^0.1.13",
     "rxjs": "^7.8.1",

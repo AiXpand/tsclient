@@ -22,6 +22,13 @@ export interface AiXpandClientOptions {
     consumerGroup?: string | null;
     plugins: Dictionary<PluginRegistration>;
     options?: {
+        keyPair?: {
+            fromFile: boolean;
+            filePath?: string;
+            privateKey?: string;
+            publicKey?: string;
+        };
+        secure?: boolean;
         debug?: boolean;
         offlineTimeout?: number;
         bufferPayloadsWhileBooting: boolean;

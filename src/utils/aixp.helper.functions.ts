@@ -33,3 +33,11 @@ export const convertKeysToCamelFormat = (obj) => {
 
     return newObj;
 };
+
+export const urlSafeBase64ToBase64 = (urlSafeBase64: string): string => {
+    return urlSafeBase64.replace(/-/g, '+').replace(/_/g, '/');
+};
+
+export const base64ToUrlSafeBase64 = (base64: string): string => {
+    return base64.replace(/\+/g, '-').replace(/\//g, '_');
+};

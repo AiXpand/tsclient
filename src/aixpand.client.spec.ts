@@ -29,6 +29,11 @@ const aixpOptions: AiXpandClientOptions = {
     },
     name: 'jest-tests',
     options: {
+        keyPair: {
+            fromFile: false,
+            publicKey: null,
+            privateKey: null,
+        },
         offlineTimeout: 60,
         bufferPayloadsWhileBooting: false,
         cacheType: CacheType.MEMORY,
