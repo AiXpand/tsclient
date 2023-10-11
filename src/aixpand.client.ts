@@ -549,6 +549,12 @@ export class AiXpandClient extends EventEmitter2 {
         }));
     }
 
+    registerDCTType(name, dctClass) {
+        this.registeredDCTs[name] = dctClass;
+
+        return this;
+    }
+
     getDCTSchema(dct: string) {
         if (!this.registeredDCTs[dct]) {
             return null;
