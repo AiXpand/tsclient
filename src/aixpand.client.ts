@@ -944,7 +944,16 @@ export class AiXpandClient extends EventEmitter2 {
             )
             .pipe(
                 map((message) => {
-                    return JSON.parse(message);
+                    let parsedMessage;
+
+                    try {
+                        parsedMessage = JSON.parse(message);
+                    } catch (e) {
+                        console.log(e);
+                        return { EE_FORMATTER: 'ignore-this'};
+                    }
+
+                    return parsedMessage;
                 }),
             )
             .pipe(

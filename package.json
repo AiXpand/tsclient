@@ -1,6 +1,6 @@
 {
   "name": "@aixpand/client",
-  "version": "0.23.2",
+  "version": "0.23.3",
   "description": "This is the Typescript client for the AiXpand network.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -50,6 +50,7 @@
   },
   "devDependencies": {
     "@jest/globals": "^29.7.0",
+    "@types/json-stable-stringify": "^1.0.34",
     "@types/node": "^20.5.4",
     "@typescript-eslint/eslint-plugin": "^6.4.1",
     "eslint": "^8.47.0",

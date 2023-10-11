@@ -2,7 +2,7 @@ import * as crypto from 'crypto';
 import * as fs from 'fs';
 import * as elliptic from 'elliptic';
 import * as asn1 from 'asn1.js';
-import * as stringify from 'json-stable-stringify';
+import stringify from 'json-stable-stringify';
 import { base64ToUrlSafeBase64, urlSafeBase64ToBase64 } from './aixp.helper.functions';
 import { AiXpandException } from '../aixpand.exception';
 
