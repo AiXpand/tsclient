@@ -86,7 +86,14 @@ export class AiXpBC {
     }
 
     verify(fullJSONMessage: string): boolean {
-        const objReceived = JSON.parse(fullJSONMessage);
+        let objReceived;
+
+        try {
+            objReceived = JSON.parse(fullJSONMessage);
+        } catch (e) {
+            return false;
+        }
+
         const signatureB64 = objReceived[EE_SIGN];
         const pkB64 = objReceived[EE_SENDER] ? objReceived[EE_SENDER].replace(ADDR_PREFIX, '') : null;
         const receivedHash = objReceived[EE_HASH];
