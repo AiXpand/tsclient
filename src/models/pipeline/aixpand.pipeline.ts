@@ -117,7 +117,7 @@ export class AiXpandPipeline {
         return this.client.publish(this.node, message);
     }
 
-    updateInstance(instance: AiXpandPluginInstance<any>) {
+    makeUpdateInstancePayload(instance: AiXpandPluginInstance<any>) {
         const instanceConfig = serialize(
             instance.getConfig(false),
             null,
@@ -128,13 +128,17 @@ export class AiXpandPipeline {
             instance.getChangeSet(),
         );
 
+        return {
+            NAME: instance.getStreamId(),
+            INSTANCE_ID: instance.id,
+            SIGNATURE: instance.signature,
+            INSTANCE_CONFIG: instanceConfig,
+        }
+    }
+
+    updateInstance(instance: AiXpandPluginInstance<any>) {
         const message = {
-            PAYLOAD: {
-                NAME: instance.getStreamId(),
-                INSTANCE_ID: instance.id,
-                SIGNATURE: instance.signature,
-                INSTANCE_CONFIG: instanceConfig,
-            },
+            PAYLOAD: this.makeUpdateInstancePayload(instance),
             ACTION: AiXpandCommandAction.UPDATE_PIPELINE_INSTANCE,
         };
 

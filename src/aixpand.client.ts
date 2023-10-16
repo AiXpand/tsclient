@@ -667,6 +667,28 @@ export class AiXpandClient extends EventEmitter2 {
         return this.dataCaptureThreads[node];
     }
 
+    batchUpdateInstances(executionEngine: string, instancesUpdates: any[]) {
+        const message = {
+            PAYLOAD: instancesUpdates,
+            ACTION: AiXpandCommandAction.BATCH_UPDATE_PIPELINE_INSTANCE,
+        };
+
+        return this.publish(executionEngine, message).then(
+            (response) => {
+                instancesUpdates.forEach((instanceUpdate) => {
+                    this.getPipeline(executionEngine, instanceUpdate['NAME'])
+                        .getPluginInstance(instanceUpdate['INSTANCE_ID'])
+                        .clearChangeset();
+                });
+
+                return response;
+            },
+            (err) => {
+                return err;
+            },
+        );
+    }
+
     publish(executionEngine: string, message: any) {
         if (!message) {
             return new Promise((resolve) => {
@@ -694,6 +716,14 @@ export class AiXpandClient extends EventEmitter2 {
                 break;
             case AiXpandCommandAction.ARCHIVE_CONFIG:
                 context[1] = message['PAYLOAD'];
+                break;
+            case AiXpandCommandAction.BATCH_UPDATE_PIPELINE_INSTANCE:
+                // TODO: add multiple contexts for each instance; and a meta-context
+                // to handle pending promises from each of the affected instances;
+
+                // this parameter injected in context is temporary, only for keeping track of
+                // the first response received from the execution engine;
+                context[4] = AiXpandCommandAction.BATCH_UPDATE_PIPELINE_INSTANCE;
                 break;
         }
 
@@ -1170,9 +1200,21 @@ export class AiXpandClient extends EventEmitter2 {
             return;
         }
 
-        const pending = !this.pendingTransactions[message.path.join(':')]
-            ? null
-            : this.pendingTransactions[message.path.join(':')].shift();
+        // TODO: remove hack and treat batch update as a transaction composed of multiple
+        // commands that are waiting to close
+        let pending;
+
+        if (message.data.context.batchUpdate !== null) {
+            const transactionPath = [message.path[0], null, null, null, AiXpandCommandAction.BATCH_UPDATE_PIPELINE_INSTANCE].join(':');
+            pending = !this.pendingTransactions[transactionPath]
+                ? null
+                : this.pendingTransactions[transactionPath].shift();
+        } else {
+            pending = !this.pendingTransactions[message.path.join(':')]
+                ? null
+                : this.pendingTransactions[message.path.join(':')].shift();
+        }
+
         if (!pending) {
             this.pipelines[message.path[0]][message.path[1]]
                 ?.getPluginInstances()

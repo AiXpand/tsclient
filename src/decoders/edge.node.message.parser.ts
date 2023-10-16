@@ -76,6 +76,7 @@ export type AiXpandInternalNotificationData = {
         stream: string;
         instance: string;
         signature: string;
+        batchUpdate: any;
     };
 };
 
@@ -469,6 +470,7 @@ const rawNetworkNotificationFormatter = (parsedMessage, originalMessage): AiXpan
             stream: originalMessage.STREAM_NAME ?? null,
             instance: originalMessage.INSTANCE_ID ?? null,
             signature: originalMessage.SIGNATURE ?? null,
+            batchUpdate: originalMessage.BATCH_UPDATE_PIPELINE_INSTANCE ?? null,
         },
     };
 

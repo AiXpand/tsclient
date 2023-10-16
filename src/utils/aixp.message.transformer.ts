@@ -214,6 +214,7 @@ const notificationTransformer = (message: AiXpandInternalMessage): AiXPNotificat
             stream: data.identifiers.stream ?? null,
             signature: data.identifiers.signature ?? null,
             displayed: data.displayed ?? null,
+            batchUpdate: data.identifiers.batchUpdate ?? null,
         },
         trace: data.info ?? data.trace,
     });

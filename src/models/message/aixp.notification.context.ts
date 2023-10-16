@@ -28,4 +28,7 @@ export class AiXPNotificationContext {
     @IsBoolean()
     @IsOptional()
     displayed?: boolean;
+
+    @IsOptional()
+    batchUpdate?: any;
 }
