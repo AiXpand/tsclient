@@ -27,11 +27,13 @@ export type AiXpandBlockchainOptions = {
         publicKey: string;
         privateKey: string;
     } | null;
+    debugMode?: boolean;
 };
 
 export class AiXpBC {
-    private keyPair: { publicKey: Buffer; privateKey: crypto.KeyObject | Buffer };
-    private readonly address: string;
+    private keyPair: { publicKey: Buffer; privateKey: crypto.KeyObject | Buffer};
+    private readonly public_key: string;
+    private readonly debugMode: boolean;
 
     constructor(options: AiXpandBlockchainOptions) {
         if (options.fromFile) {
@@ -41,8 +43,11 @@ export class AiXpBC {
         } else {
             this.keyPair = this.generateAndSaveKeys();
         }
-
-        this.address = this.constructAddress();
+        this.debugMode = options.debugMode || false;
+        this.public_key = this.constructCompressedPublicKey();
+        if (this.debugMode) {
+            console.log('AiXpand Blockchain address: ' + this.getAddress());
+        }
     }
 
     getPublicKeyDER(): string {
@@ -54,7 +59,7 @@ export class AiXpBC {
     }
 
     getAddress(): string {
-        return ADDR_PREFIX + this.address;
+        return ADDR_PREFIX + this.public_key;
     }
 
     getHash(input: string | object) {
@@ -86,6 +91,8 @@ export class AiXpBC {
     }
 
     verify(fullJSONMessage: string): boolean {
+        let hashResult = false;
+        let signatureResult = false;
         let objReceived;
 
         try {
@@ -100,36 +107,63 @@ export class AiXpBC {
         const objData = Object.fromEntries(
             Object.entries(objReceived).filter(([key]) => !NON_DATA_FIELDS.includes(key)),
         );
-
-        const hash = crypto.createHash('sha256').update(stringify(objData)).digest();
+        const strData = stringify(objData);
+        const hash = crypto.createHash('sha256').update(strData).digest();
         const hashHex = hash.toString('hex');
 
-        if (hashHex != receivedHash || !pkB64) {
-            return false;
+        if (hashHex != receivedHash) {
+          if (this.debugMode) {
+            console.log(
+              "Hashes do not match or public key is missing:\n",
+              "Computed: " + hashHex + "\n",
+              "\nReceived: " + receivedHash, 
+              "\nPublic key:" + pkB64,
+              "\nStringify: '" + strData + "'",
+            );  
+          }
+          hashResult = false;          
         }
 
-        const signatureBuffer = Buffer.from(urlSafeBase64ToBase64(signatureB64), 'base64');
-        const uncompressedPublicKeyHex = ec
-            .keyFromPublic(Buffer.from(urlSafeBase64ToBase64(pkB64), 'base64').toString('hex'), 'hex')
-            .getPublic(false, 'hex');
+        if(pkB64) {
+          const signatureBuffer = Buffer.from(urlSafeBase64ToBase64(signatureB64), 'base64');
+          const uncompressedPublicKeyHex = ec
+              .keyFromPublic(Buffer.from(urlSafeBase64ToBase64(pkB64), 'base64').toString('hex'), 'hex')
+              .getPublic(false, 'hex');
+  
+          // Manually create DER formatted public key
+          const publicKeyDerManual = '3056301006072a8648ce3d020106052b8104000a034200' + uncompressedPublicKeyHex;
+          const publicKeyObj = crypto.createPublicKey({
+              key: Buffer.from(publicKeyDerManual, 'hex'),
+              format: 'der',
+              type: 'spki',
+          });
+  
+          signatureResult = crypto.verify(
+              null,
+              hash,
+              {
+                  key: publicKeyObj,
+                  padding: crypto.constants.RSA_PKCS1_PSS_PADDING,
+              },
+              signatureBuffer,
+          );  
 
-        // Manually create DER formatted public key
-        const publicKeyDerManual = '3056301006072a8648ce3d020106052b8104000a034200' + uncompressedPublicKeyHex;
-        const publicKeyObj = crypto.createPublicKey({
-            key: Buffer.from(publicKeyDerManual, 'hex'),
-            format: 'der',
-            type: 'spki',
-        });
-
-        return crypto.verify(
-            null,
-            hash,
-            {
-                key: publicKeyObj,
-                padding: crypto.constants.RSA_PKCS1_PSS_PADDING,
-            },
-            signatureBuffer,
-        );
+          if(this.debugMode) {            
+            console.log("Verify result: " + signatureResult);
+            const bHash = Buffer.from(receivedHash, 'hex');
+            const signatureRecvResult = crypto.verify(
+              null,
+              bHash,
+              {
+                  key: publicKeyObj,
+                  padding: crypto.constants.RSA_PKCS1_PSS_PADDING,
+              },
+              signatureBuffer,
+            );  
+            console.log("Verify on received hash & signature: " + signatureRecvResult); 
+          }
+        }
+        return hashResult && signatureResult;
     }
 
     private loadOrCreateKeys(filePath) {
@@ -182,7 +216,7 @@ export class AiXpBC {
         return keyPair;
     }
 
-    private constructAddress(): string {
+    private constructCompressedPublicKey(): string {
         const publicKeyBytes = SPKI.decode(this.keyPair.publicKey, 'der').publicKey.data;
         const compressedPublicKeyB64 = Buffer.from(
             ec.keyFromPublic(publicKeyBytes, 'hex').getPublic(true, 'hex'),
