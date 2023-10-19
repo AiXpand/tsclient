@@ -1096,18 +1096,7 @@ export class AiXpandClient extends EventEmitter2 {
                 return !message.data.context.initiator || message.data.context.initiator === this.initiator;
             }),
         );
-        this.streams[AiXpandEventType.PAYLOAD] = payloadsStream.pipe(
-            filter((message: AiXPMessage<AiXPPayloadData>) => {
-                if (message.path[1] === ADMIN_PIPELINE_NAME) {
-                    return true;
-                }
-
-                // filter out messages for other initiators
-                return message.metadata.identifiers
-                    ? message.metadata.identifiers.initiatorId === this.initiator
-                    : false;
-            }),
-        );
+        this.streams[AiXpandEventType.PAYLOAD] = payloadsStream;
     }
 
     /**
