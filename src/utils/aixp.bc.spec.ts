@@ -7,6 +7,7 @@ describe('AiXpand Blockchain Tests', () => {
     beforeAll(() => {
         mockAiXpandBCEngine = new AiXpBC({
             fromFile: false,
+            //debugMode: true,
             keyPair: {
                 publicKey:
                     '3056301006072a8648ce3d020106052b8104000a034200047bed71522fff22fb93de3922e84d8cb5172a3d833ef6daa681f80fa65a8ab7d3c4183504b4b2b1ff390e6c62dca4109a4851e7588cfb19bf427a8dffd539102f',

@@ -32,7 +32,7 @@ export type AiXpandBlockchainOptions = {
 
 export class AiXpBC {
     private keyPair: { publicKey: Buffer; privateKey: crypto.KeyObject | Buffer};
-    private readonly public_key: string;
+    private readonly compressedPublicKey: string;
     private readonly debugMode: boolean;
 
     constructor(options: AiXpandBlockchainOptions) {
@@ -44,7 +44,7 @@ export class AiXpBC {
             this.keyPair = this.generateAndSaveKeys();
         }
         this.debugMode = options.debugMode || false;
-        this.public_key = this.constructCompressedPublicKey();
+        this.compressedPublicKey = this.constructCompressedPublicKey();
         if (this.debugMode) {
             console.log('AiXpand Blockchain address: ' + this.getAddress());
         }
@@ -59,7 +59,7 @@ export class AiXpBC {
     }
 
     getAddress(): string {
-        return ADDR_PREFIX + this.public_key;
+        return ADDR_PREFIX + this.compressedPublicKey;
     }
 
     getHash(input: string | object) {
@@ -112,16 +112,19 @@ export class AiXpBC {
         const hashHex = hash.toString('hex');
 
         if (hashHex != receivedHash) {
+          hashResult = false;          
           if (this.debugMode) {
             console.log(
               "Hashes do not match or public key is missing:\n",
-              "Computed: " + hashHex + "\n",
-              "\nReceived: " + receivedHash, 
-              "\nPublic key:" + pkB64,
-              "\nStringify: '" + strData + "'",
+              "  Computed: " + hashHex + "\n",
+              "  Received: " + receivedHash + "\n", 
+              "  Public key:" + pkB64 + "\n",
+              "  Stringify: '" + strData + "'",
             );  
           }
-          hashResult = false;          
+        }
+        else {
+          hashResult = true;
         }
 
         if(pkB64) {
@@ -149,7 +152,7 @@ export class AiXpBC {
           );  
 
           if(this.debugMode) {            
-            console.log("Verify result: " + signatureResult);
+            console.log("Verify local hash: " + signatureResult);
             const bHash = Buffer.from(receivedHash, 'hex');
             const signatureRecvResult = crypto.verify(
               null,
