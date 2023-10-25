@@ -163,7 +163,12 @@ export class AiXpBC {
               },
               signatureBuffer,
             );  
-            console.log("Verify on received hash & signature: " + signatureRecvResult); 
+            
+            if (signatureRecvResult){
+              console.log("Signature is valid for received hash & signature meaning that the public key is valid as well as the signature. Most likely someone or something modified the payload");
+            } else {
+              console.log("Verify ONLY on received hash & signature FAILED: " + signatureRecvResult); 
+            }
           }
         }
         return hashResult && signatureResult;
