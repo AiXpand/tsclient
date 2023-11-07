@@ -31,7 +31,7 @@ export type AiXpandBlockchainOptions = {
 };
 
 export class AiXpBC {
-    private keyPair: { publicKey: Buffer; privateKey: crypto.KeyObject | Buffer};
+    private keyPair: { publicKey: Buffer; privateKey: crypto.KeyObject | Buffer };
     private readonly compressedPublicKey: string;
     private readonly debugMode: boolean;
 
@@ -112,64 +112,65 @@ export class AiXpBC {
         const hashHex = hash.toString('hex');
 
         if (hashHex != receivedHash) {
-          hashResult = false;          
-          if (this.debugMode) {
-            console.log(
-              "Hashes do not match or public key is missing:\n",
-              "  Computed: " + hashHex + "\n",
-              "  Received: " + receivedHash + "\n", 
-              "  Public key:" + pkB64 + "\n",
-              "  Stringify: '" + strData + "'",
-            );  
-          }
-        }
-        else {
-          hashResult = true;
-        }
-
-        if(pkB64) {
-          const signatureBuffer = Buffer.from(urlSafeBase64ToBase64(signatureB64), 'base64');
-          const uncompressedPublicKeyHex = ec
-              .keyFromPublic(Buffer.from(urlSafeBase64ToBase64(pkB64), 'base64').toString('hex'), 'hex')
-              .getPublic(false, 'hex');
-  
-          // Manually create DER formatted public key
-          const publicKeyDerManual = '3056301006072a8648ce3d020106052b8104000a034200' + uncompressedPublicKeyHex;
-          const publicKeyObj = crypto.createPublicKey({
-              key: Buffer.from(publicKeyDerManual, 'hex'),
-              format: 'der',
-              type: 'spki',
-          });
-  
-          signatureResult = crypto.verify(
-              null,
-              hash,
-              {
-                  key: publicKeyObj,
-                  padding: crypto.constants.RSA_PKCS1_PSS_PADDING,
-              },
-              signatureBuffer,
-          );  
-
-          if(this.debugMode) {            
-            console.log("Verify local hash: " + signatureResult);
-            const bHash = Buffer.from(receivedHash, 'hex');
-            const signatureRecvResult = crypto.verify(
-              null,
-              bHash,
-              {
-                  key: publicKeyObj,
-                  padding: crypto.constants.RSA_PKCS1_PSS_PADDING,
-              },
-              signatureBuffer,
-            );  
-            
-            if (signatureRecvResult){
-              console.log("Signature is valid for received hash & signature meaning that the public key is valid as well as the signature. Most likely someone or something modified the payload");
-            } else {
-              console.log("Verify ONLY on received hash & signature FAILED: " + signatureRecvResult); 
+            hashResult = false;
+            if (this.debugMode) {
+                console.log(
+                    'Hashes do not match or public key is missing:\n',
+                    '  Computed: ' + hashHex + '\n',
+                    '  Received: ' + receivedHash + '\n',
+                    '  Public key:' + pkB64 + '\n',
+                    "  Stringify: '" + strData + "'",
+                );
             }
-          }
+        } else {
+            hashResult = true;
+        }
+
+        if (pkB64) {
+            const signatureBuffer = Buffer.from(urlSafeBase64ToBase64(signatureB64), 'base64');
+            const uncompressedPublicKeyHex = ec
+                .keyFromPublic(Buffer.from(urlSafeBase64ToBase64(pkB64), 'base64').toString('hex'), 'hex')
+                .getPublic(false, 'hex');
+
+            // Manually create DER formatted public key
+            const publicKeyDerManual = '3056301006072a8648ce3d020106052b8104000a034200' + uncompressedPublicKeyHex;
+            const publicKeyObj = crypto.createPublicKey({
+                key: Buffer.from(publicKeyDerManual, 'hex'),
+                format: 'der',
+                type: 'spki',
+            });
+
+            signatureResult = crypto.verify(
+                null,
+                hash,
+                {
+                    key: publicKeyObj,
+                    padding: crypto.constants.RSA_PKCS1_PSS_PADDING,
+                },
+                signatureBuffer,
+            );
+
+            if (this.debugMode) {
+                console.log('Verify local hash: ' + signatureResult);
+                const bHash = Buffer.from(receivedHash, 'hex');
+                const signatureRecvResult = crypto.verify(
+                    null,
+                    bHash,
+                    {
+                        key: publicKeyObj,
+                        padding: crypto.constants.RSA_PKCS1_PSS_PADDING,
+                    },
+                    signatureBuffer,
+                );
+
+                if (signatureRecvResult) {
+                    console.log(
+                        'Signature is valid for received hash & signature meaning that the public key is valid as well as the signature. Most likely someone or something modified the payload',
+                    );
+                } else {
+                    console.log('Verify ONLY on received hash & signature FAILED: ' + signatureRecvResult);
+                }
+            }
         }
         return hashResult && signatureResult;
     }

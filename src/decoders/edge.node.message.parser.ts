@@ -33,10 +33,12 @@ const mappedKeys = [
     'EE_SIGN',
     'EE_SENDER',
     'EE_HASH',
+    'NOTIFICATION_CODE',
+    'NOTIFICATION_TAG',
 ];
 
 export type AiXpandInternalMessage = {
-    id: number;
+    id: number | string;
     host: {
         id: string;
         sender: string;
@@ -70,6 +72,8 @@ export type AiXpandInternalNotificationData = {
     timestamp: Date;
     trace: any;
     displayed: boolean;
+    code: number;
+    tag: string;
     identifiers: {
         initiator: string;
         session: string;
@@ -464,6 +468,8 @@ const rawNetworkNotificationFormatter = (parsedMessage, originalMessage): AiXpan
         timestamp: new Date(originalMessage.TIMESTAMP),
         trace: originalMessage.TRACE,
         displayed: originalMessage.DISPLAYED,
+        tag: originalMessage.NOTIFICATION_TAG,
+        code: originalMessage.NOTIFICATION_CODE,
         identifiers: {
             initiator: originalMessage.INITIATOR_ID ?? null,
             session: originalMessage.SESSION_ID ?? null,

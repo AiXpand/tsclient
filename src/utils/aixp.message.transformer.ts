@@ -207,6 +207,8 @@ const notificationTransformer = (message: AiXpandInternalMessage): AiXPNotificat
         module: data.module,
         type: data.type,
         notification: data.message,
+        code: data.code,
+        tag: data.tag,
         context: {
             timestamp: data.timestamp ?? null,
             initiator: data.identifiers.initiator ?? null,

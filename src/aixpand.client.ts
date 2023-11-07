@@ -11,7 +11,6 @@ import {
     AiXpandCommandAction,
     AiXpandDataCaptureThread,
     AiXpandEventType,
-    AiXpandPendingTransaction,
     AiXpandPipeline,
     AiXpandPluginInstance,
     AiXpandUniverseHost,
@@ -42,6 +41,7 @@ import { AiXpandInternalMessage, edgeNodeMessageParser } from './decoders/edge.n
 import { cavi2Decoder } from './decoders/cavi2.decoder';
 import { AiXpandBlockchainOptions, AiXpBC } from './utils/aixp.bc';
 import * as path from 'path';
+import { NodeRequestManager } from './models/node.requests/node.request.manager';
 
 export enum DataCaptureThreadType {
     DUMMY_STREAM = 'ADummyStructStream',
@@ -154,11 +154,11 @@ export class AiXpandClient extends EventEmitter2 {
     private pipelines: Dictionary<Dictionary<AiXpandPipeline>> = {};
 
     /**
-     * A dictionary for keeping references to pending promises that wrap EE plugin updates.
+     * The request manager keeping track of all the requests made towards any of the fleet edge nodes.
      *
      * @private
      */
-    private pendingTransactions: Dictionary<AiXpandPendingTransaction[]> = {};
+    private requestManager: NodeRequestManager;
 
     /**
      * Flag for instructing the MQTT client how to connect to the payloads topic.
@@ -313,6 +313,7 @@ export class AiXpandClient extends EventEmitter2 {
         }
 
         this.blockchainEngine = new AiXpBC(blockchainOptions);
+        this.requestManager = new NodeRequestManager();
     }
 
     registerMessageDecoder(name, callback) {
@@ -689,7 +690,7 @@ export class AiXpandClient extends EventEmitter2 {
         );
     }
 
-    publish(executionEngine: string, message: any) {
+    publish(executionEngine: string, message: any, extraWatches: string[][] = []) {
         if (!message) {
             return new Promise((resolve) => {
                 resolve({
@@ -703,40 +704,51 @@ export class AiXpandClient extends EventEmitter2 {
         message['INITIATOR_ID'] = this.initiator;
         message['EE_ID'] = executionEngine;
 
-        const context = [executionEngine, null, null, null];
+        const watches = [];
+        if (extraWatches.length > 0) {
+            extraWatches.forEach((watch) => {
+                watches.push(watch);
+            });
+        }
+
         switch (message['ACTION']) {
             case AiXpandCommandAction.UPDATE_PIPELINE_INSTANCE:
-                context[1] = message['PAYLOAD']['NAME'];
-                context[2] = message['PAYLOAD']['SIGNATURE'];
-                context[3] = message['PAYLOAD']['INSTANCE_ID'];
-
+                watches.push([
+                    executionEngine,
+                    message['PAYLOAD']['NAME'],
+                    message['PAYLOAD']['SIGNATURE'],
+                    message['PAYLOAD']['INSTANCE_ID'],
+                ]);
                 break;
             case AiXpandCommandAction.UPDATE_CONFIG:
-                context[1] = message['PAYLOAD']['NAME'];
+                watches.push([executionEngine, message['PAYLOAD']['NAME'], null, null]);
+
                 break;
             case AiXpandCommandAction.ARCHIVE_CONFIG:
-                context[1] = message['PAYLOAD'];
+                watches.push([executionEngine, message['PAYLOAD'], null, null]);
+
                 break;
             case AiXpandCommandAction.BATCH_UPDATE_PIPELINE_INSTANCE:
-                // TODO: add multiple contexts for each instance; and a meta-context
-                // to handle pending promises from each of the affected instances;
+                message['PAYLOAD'].forEach((updateInstanceCommand) => {
+                    watches.push([
+                        executionEngine,
+                        updateInstanceCommand['NAME'],
+                        updateInstanceCommand['SIGNATURE'],
+                        updateInstanceCommand['INSTANCE_ID'],
+                    ]);
+                });
 
-                // this parameter injected in context is temporary, only for keeping track of
-                // the first response received from the execution engine;
-                context[4] = AiXpandCommandAction.BATCH_UPDATE_PIPELINE_INSTANCE;
                 break;
         }
 
         return new Promise((resolve, reject) => {
-            const key = context.join(':');
-            if (!this.pendingTransactions[key]) {
-                this.pendingTransactions[key] = [];
+            if (watches.length > 0) {
+                // don't create pending requests if no response is expected
+                const pendingRequest = this.requestManager.create(message, resolve, reject);
+                watches.forEach((watchPath) => {
+                    pendingRequest.watch(watchPath);
+                });
             }
-
-            this.pendingTransactions[key].push(<AiXpandPendingTransaction>{
-                onSuccess: resolve,
-                onFail: reject,
-            });
 
             this.mqttClient.publish(
                 `${this.aixpNamespace}/${executionEngine}/config`,
@@ -943,6 +955,9 @@ export class AiXpandClient extends EventEmitter2 {
 
                 if (allTopicsSubscribed(topicSubscriptionStatus)) {
                     this.emit(AiXpandClientEvent.AIXP_CLIENT_BOOTED, null, true);
+                    this.emit(AiXpandClientEvent.AIXP_BC_ADDRESS, {
+                        address: this.blockchainEngine.getAddress(),
+                    });
                 }
             });
         });
@@ -980,7 +995,7 @@ export class AiXpandClient extends EventEmitter2 {
                         parsedMessage = JSON.parse(message);
                     } catch (e) {
                         console.log(e);
-                        return { EE_FORMATTER: 'ignore-this'};
+                        return { EE_FORMATTER: 'ignore-this' };
                     }
 
                     return parsedMessage;
@@ -1189,22 +1204,14 @@ export class AiXpandClient extends EventEmitter2 {
             return;
         }
 
-        // TODO: remove hack and treat batch update as a transaction composed of multiple
-        // commands that are waiting to close
-        let pending;
+        const pendingRequest = this.requestManager.find(message.path);
+        if (pendingRequest !== null) {
+            pendingRequest.process(message);
 
-        if (message.data.context.batchUpdate !== null) {
-            const transactionPath = [message.path[0], null, null, null, AiXpandCommandAction.BATCH_UPDATE_PIPELINE_INSTANCE].join(':');
-            pending = !this.pendingTransactions[transactionPath]
-                ? null
-                : this.pendingTransactions[transactionPath].shift();
+            if (pendingRequest.isClosed()) {
+                this.requestManager.destroy(message.path);
+            }
         } else {
-            pending = !this.pendingTransactions[message.path.join(':')]
-                ? null
-                : this.pendingTransactions[message.path.join(':')].shift();
-        }
-
-        if (!pending) {
             this.pipelines[message.path[0]][message.path[1]]
                 ?.getPluginInstances()
                 .forEach((instance: AiXpandPluginInstance<any>) => {
@@ -1228,16 +1235,6 @@ export class AiXpandClient extends EventEmitter2 {
             );
 
             return;
-        }
-
-        switch (message.data.type) {
-            case AiXpNotificationType.NORMAL:
-                pending.onSuccess(message);
-                break;
-            case AiXpNotificationType.ABNORMAL:
-            case AiXpNotificationType.EXCEPTION:
-                pending.onFail(message);
-                break;
         }
     }
 

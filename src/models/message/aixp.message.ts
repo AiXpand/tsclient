@@ -23,8 +23,7 @@ export class AiXPMessageHost {
 
 export class AiXPMessage<T> {
     @IsNotEmpty()
-    @IsNumber()
-    id: number;
+    id: string;
 
     @ValidateNested()
     @Type(() => AiXPMessageHost)

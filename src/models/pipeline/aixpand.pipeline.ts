@@ -5,6 +5,7 @@ import { serialize } from '../../utils';
 import { Pipeline } from '../../decorators';
 import { AiXpandClient } from '../../aixpand.client';
 import { AiXPMessage, AiXPNotificationData } from '../message';
+import { Dictionary } from '../dictionary';
 
 export enum NotificationMessagesParts {
     ARCHIVE_SUCCESS = 'Successfully archived pipeline',
@@ -41,6 +42,11 @@ export class AiXpandPipeline {
      */
     readonly client: AiXpandClient;
 
+    /**
+     * Watches to be added when deploying the pipeline.
+     */
+    private watches: Dictionary<string[]> = {};
+
     constructor(dct: AiXpandDataCaptureThread<any> = null, node: string, client: AiXpandClient) {
         this.node = node;
         this.dct = dct;
@@ -67,14 +73,38 @@ export class AiXpandPipeline {
         return this.instances.filter((instance) => instance.id === instanceId).pop() ?? null;
     }
 
+    addInstanceWatch(path: string[]) {
+        this.watches[path.join(':')] = path;
+
+        return this;
+    }
+
+    getInstanceWatches() {
+        return Object.keys(this.watches).map((watchKey) => this.watches[watchKey]);
+    }
+
+    removeInstanceWatch(path: string[]) {
+        delete this.watches[path.join(':')];
+
+        return this;
+    }
+
+    removeAllInstanceWatches() {
+        this.watches = {};
+
+        return this;
+    }
+
     attachPluginInstance(candidate: AiXpandPluginInstance<any>) {
         const existingInstance = this.getPluginInstance(candidate.id);
 
         if (!existingInstance) {
             candidate.setStreamId(this.dct.id).setPipeline(this);
 
+            this.addInstanceWatch([this.node, this.dct.id, candidate.signature, candidate.id]);
             this.instances.push(candidate);
         } else {
+            // this is the internal route, instances added when parsing the heartbeat
             existingInstance
                 .setConfig(candidate.getConfig(false))
                 .resetTags()
@@ -107,6 +137,7 @@ export class AiXpandPipeline {
         }
 
         this.removeFromInstanceArray(instance);
+        this.removeInstanceWatch([this.node, this.dct.id, instance.signature, instance.id]);
 
         instance = null;
 
@@ -133,7 +164,7 @@ export class AiXpandPipeline {
             INSTANCE_ID: instance.id,
             SIGNATURE: instance.signature,
             INSTANCE_CONFIG: instanceConfig,
-        }
+        };
     }
 
     updateInstance(instance: AiXpandPluginInstance<any>) {
@@ -160,7 +191,7 @@ export class AiXpandPipeline {
             ACTION: AiXpandCommandAction.UPDATE_CONFIG,
         };
 
-        return this.client.publish(this.node, message);
+        return this.client.publish(this.node, message, this.getInstanceWatches());
     }
 
     close() {
