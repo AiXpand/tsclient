@@ -675,17 +675,17 @@ export class AiXpandClient extends EventEmitter2 {
         };
 
         return this.publish(executionEngine, message).then(
-            (response) => {
+            (responses) => {
                 instancesUpdates.forEach((instanceUpdate) => {
                     this.getPipeline(executionEngine, instanceUpdate['NAME'])
                         .getPluginInstance(instanceUpdate['INSTANCE_ID'])
                         .clearChangeset();
                 });
 
-                return response;
+                return responses;
             },
-            (err) => {
-                return err;
+            (errs) => {
+                return errs;
             },
         );
     }

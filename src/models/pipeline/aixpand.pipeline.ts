@@ -174,13 +174,13 @@ export class AiXpandPipeline {
         };
 
         return this.client.publish(this.node, message).then(
-            (response) => {
+            (responses) => {
                 instance.clearChangeset();
 
-                return response;
+                return responses;
             },
-            (err) => {
-                return err;
+            (errs) => {
+                return errs;
             },
         );
     }
@@ -194,7 +194,7 @@ export class AiXpandPipeline {
         return this.client.publish(this.node, message, this.getInstanceWatches());
     }
 
-    close() {
+    close(): Promise<AiXPMessage<AiXPNotificationData>[]> {
         const pipelineName = this.getDataCaptureThread().id;
         const message = {
             PAYLOAD: pipelineName,
@@ -202,25 +202,12 @@ export class AiXpandPipeline {
         };
 
         return this.client.publish(this.node, message).then(
-            (notif: AiXPMessage<AiXPNotificationData>) => {
-                const messageText = notif.data.notification;
+            (notifs) => {
+                this.client.removePipeline(this);
 
-                if (
-                    (!!messageText.match(NotificationMessagesParts.ARCHIVE_SUCCESS) ||
-                        !!messageText.match(NotificationMessagesParts.DELETE_SUCCESS)) &&
-                    !!messageText.match(pipelineName)
-                ) {
-                    this.client.removePipeline(this);
-
-                    return {
-                        message: messageText,
-                        pipeline: pipelineName,
-                    };
-                }
-
-                return notif;
+                return notifs;
             },
-            (err: AiXPMessage<AiXPNotificationData>) => {
+            (err) => {
                 return err;
             },
         );
