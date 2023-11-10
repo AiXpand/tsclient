@@ -183,6 +183,8 @@ const heartbeatTransformer = (
                             .setStreamId(instanceStats.pipelineId);
                     }
 
+                    pluginInstance.setStreamId(pipelineName);
+
                     heartbeat.activePlugins.push(pluginInstance);
 
                     if (instance.LINKED_INSTANCES) {

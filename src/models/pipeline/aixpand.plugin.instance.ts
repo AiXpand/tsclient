@@ -23,7 +23,7 @@ export class AiXpandPluginInstance<T extends object> {
      *
      * @public string id
      */
-    public readonly id: string;
+    public id: string;
 
     /**
      * The instance signature.
