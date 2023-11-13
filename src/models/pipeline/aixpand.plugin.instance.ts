@@ -177,6 +177,20 @@ export class AiXpandPluginInstance<T extends object> {
         );
     }
 
+    isLinkedWith(tester: AiXpandPluginInstance<T>): boolean {
+        if (this.linkedInstances.length === 0) {
+            return false;
+        }
+
+        for (const link of this.linkedInstances) {
+            if (link.id === tester.id && link.getStreamId() === tester.getStreamId()) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     unlink(linkedInstance: AiXpandPluginInstance<T>) {
         linkedInstance.setCollectorInstance(null);
 
@@ -186,24 +200,24 @@ export class AiXpandPluginInstance<T extends object> {
                 this.linkedInstances[i].id === linkedInstance.id
             ) {
                 this.linkedInstances.splice(i, 1);
-                break;
             }
         }
 
         return this;
     }
 
-    link(linkedInstance: AiXpandPluginInstance<T>) {
-        const targetMetadata = linkedInstance.getDecoratorMetadata();
+    link(candidate: AiXpandPluginInstance<T>) {
+        const targetMetadata = candidate.getDecoratorMetadata();
         const thisMetadata = this.getDecoratorMetadata();
 
         if (
             targetMetadata.signature === thisMetadata.signature &&
             targetMetadata.options.linkable &&
-            thisMetadata.options.linkable
+            thisMetadata.options.linkable &&
+            !this.isLinkedWith(candidate)
         ) {
-            this.linkedInstances.push(linkedInstance);
-            linkedInstance.setCollectorInstance(this);
+            this.linkedInstances.push(candidate);
+            candidate.setCollectorInstance(this);
         }
 
         return this;
