@@ -1206,9 +1206,13 @@ export class AiXpandClient extends EventEmitter2 {
 
         const pendingRequest = this.requestManager.find(message.path);
         if (pendingRequest !== null) {
+            console.log(`[Transaction: ${pendingRequest.id}] Found for path: ${message.path.join(', ')} `);
+
             pendingRequest.process(message);
 
             if (pendingRequest.isClosed()) {
+                console.log(`[Transaction: ${pendingRequest.id}] Is Closed: Destroying.} `);
+
                 this.requestManager.destroy(message.path);
             }
         } else {

@@ -36,6 +36,8 @@ export class UpdatePipelineInstanceRequest extends NodeRequest {
     }
 
     protected reject(notification: any) {
+        console.log(`[Transaction: ${this.id}] Rejecting: ${notification.path.join(', ')} `);
+
         if (!this.watches(notification.path) || this.isClosed()) {
             return;
         }
@@ -44,6 +46,8 @@ export class UpdatePipelineInstanceRequest extends NodeRequest {
     }
 
     protected resolve(notification: any) {
+        console.log(`[Transaction: ${this.id}] Resolving: ${notification.path.join(', ')} `);
+
         if (!this.watches(notification.path) || this.isClosed()) {
             return;
         }

@@ -32,6 +32,8 @@ export class UpdateConfigRequest extends NodeRequest {
     }
 
     protected reject(notification: any) {
+        console.log(`[Transaction: ${this.id}] Rejecting: ${notification.path.join(', ')} `);
+
         if (!this.watches(notification.path) || this.isClosed()) {
             return;
         }
@@ -39,19 +41,31 @@ export class UpdateConfigRequest extends NodeRequest {
         this.updateTarget(notification.path, false, notification.data.notification);
         this.close();
 
+        console.log(`[Transaction: ${this.id}] Calling OnFail() hook`);
+
         this.onFail(this.transactionNotifications);
     }
 
     protected resolve(notification: any) {
+        console.log(`[Transaction: ${this.id}] Resolving: ${notification.path.join(', ')} `);
+
         if (!this.watches(notification.path) || this.isClosed()) {
             return;
         }
 
         this.updateTarget(notification.path, true, notification.data.notification);
 
+        console.log(`[Transaction: ${this.id}] isComplete: ${this.isComplete()}`);
+        console.log(`[Transaction: ${this.id}] canResolve: ${this.canResolve()}`);
+        console.log(`[Transaction: ${this.id}] watches: ${JSON.stringify(this.listWatches())}`);
+
         if (this.isComplete() && this.canResolve()) {
+            console.log(`[Transaction: ${this.id}] Calling OnSuccess() hook`);
+
             this.onSuccess(this.transactionNotifications);
             this.close();
+        } else {
+            console.log(`[Transaction: ${this.id}] Skipping OnSuccess() hook`);
         }
     }
 }

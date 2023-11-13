@@ -63,6 +63,8 @@ export abstract class NodeRequest {
         this.targets[path.join(':')] = new Target();
         this.mgr.index(path, this);
 
+        console.log(`[Transaction: ${this.id}] Watches: ${Object.keys(this.targets).join(', ')} `);
+
         return this;
     }
 
@@ -95,6 +97,8 @@ export abstract class NodeRequest {
     }
 
     protected updateTarget(path: string[], status: boolean, reason: string = null) {
+        console.log(`[Transaction: ${this.id}] Updated: ${path.join(':')} `);
+
         this.targets[path.join(':')].reason = reason;
         this.targets[path.join(':')].status = status;
 
