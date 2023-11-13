@@ -30,6 +30,11 @@ export class NodeRequestManager {
 
         this.pendingRequests[request.id] = request;
 
+        console.log('------------- ALL TRANSACTIONS --------------- ');
+        console.log(this.pendingRequests);
+        console.log('------------- ---------------- --------------- ');
+
+
         return request;
     }
 
@@ -54,6 +59,8 @@ export class NodeRequestManager {
             delete this.requestsIndexes[watch.join(':')];
         });
         delete this.pendingRequests[request.id];
+
+        console.log('DESTROYED!!!');
 
         return this;
     }

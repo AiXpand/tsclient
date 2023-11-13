@@ -74,6 +74,8 @@ export class AiXpandPipeline {
     }
 
     addInstanceWatch(path: string[]) {
+        console.log('adding watch:', path);
+
         this.watches[path.join(':')] = path;
 
         return this;
@@ -84,6 +86,9 @@ export class AiXpandPipeline {
     }
 
     removeInstanceWatch(path: string[]) {
+        console.log('removing watch:', path);
+
+
         if (this.watches[path.join(':')]) {
             delete this.watches[path.join(':')];
         }
@@ -92,18 +97,23 @@ export class AiXpandPipeline {
     }
 
     removeAllInstanceWatches() {
+        console.log('clearing watches!!!!!');
+
         this.watches = {};
 
         return this;
     }
 
-    attachPluginInstance(candidate: AiXpandPluginInstance<any>) {
+    attachPluginInstance(candidate: AiXpandPluginInstance<any>, nowatch = false) {
         const existingInstance = this.getPluginInstance(candidate.id);
 
         if (!existingInstance) {
             candidate.setStreamId(this.dct.id).setPipeline(this);
 
-            this.addInstanceWatch([this.node, this.dct.id, candidate.signature, candidate.id]);
+            if (!nowatch) {
+                this.addInstanceWatch([this.node, this.dct.id, candidate.signature, candidate.id]);
+            }
+
             this.instances.push(candidate);
         } else {
             // this is the internal route, instances added when parsing the heartbeat
@@ -192,6 +202,8 @@ export class AiXpandPipeline {
             PAYLOAD: this.compile(session),
             ACTION: AiXpandCommandAction.UPDATE_CONFIG,
         };
+
+        console.log(`DEPLOYING, existing instance watches: ${JSON.stringify(this.getInstanceWatches())}`);
 
         const response = this.client.publish(this.node, message, this.getInstanceWatches());
         this.removeAllInstanceWatches();

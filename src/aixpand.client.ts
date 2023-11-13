@@ -42,6 +42,7 @@ import { cavi2Decoder } from './decoders/cavi2.decoder';
 import { AiXpandBlockchainOptions, AiXpBC } from './utils/aixp.bc';
 import * as path from 'path';
 import { NodeRequestManager } from './models/node.requests/node.request.manager';
+import { NodeRequest } from "./models/node.requests/node.request";
 
 export enum DataCaptureThreadType {
     DUMMY_STREAM = 'ADummyStructStream',
@@ -706,6 +707,9 @@ export class AiXpandClient extends EventEmitter2 {
 
         const watches = [];
         if (extraWatches.length > 0) {
+            console.log('GOT EXTRA WATCHES, PUSHING!!!', extraWatches);
+
+
             extraWatches.forEach((watch) => {
                 watches.push(watch);
             });
@@ -741,10 +745,12 @@ export class AiXpandClient extends EventEmitter2 {
                 break;
         }
 
+        console.log('COMPLETE WATCHES: ', watches);
+
         return new Promise((resolve, reject) => {
             if (watches.length > 0) {
                 // don't create pending requests if no response is expected
-                const pendingRequest = this.requestManager.create(message, resolve, reject);
+                const pendingRequest: NodeRequest = this.requestManager.create(message, resolve, reject);
                 watches.forEach((watchPath) => {
                     pendingRequest.watch(watchPath);
                 });
@@ -1285,7 +1291,7 @@ export class AiXpandClient extends EventEmitter2 {
                 return;
             }
 
-            this.pipelines[message.host.id][`${plugin.getStreamId()}`].attachPluginInstance(plugin);
+            this.pipelines[message.host.id][`${plugin.getStreamId()}`].attachPluginInstance(plugin, true);
         });
     }
 
