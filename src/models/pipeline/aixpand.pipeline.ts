@@ -84,7 +84,9 @@ export class AiXpandPipeline {
     }
 
     removeInstanceWatch(path: string[]) {
-        delete this.watches[path.join(':')];
+        if (this.watches[path.join(':')]) {
+            delete this.watches[path.join(':')];
+        }
 
         return this;
     }
@@ -191,7 +193,10 @@ export class AiXpandPipeline {
             ACTION: AiXpandCommandAction.UPDATE_CONFIG,
         };
 
-        return this.client.publish(this.node, message, this.getInstanceWatches());
+        const response = this.client.publish(this.node, message, this.getInstanceWatches());
+        this.removeAllInstanceWatches();
+
+        return response;
     }
 
     close(): Promise<AiXPMessage<AiXPNotificationData>[]> {
