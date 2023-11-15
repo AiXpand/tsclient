@@ -170,6 +170,13 @@ export class AiXpandPluginInstance<T extends object> {
         return this;
     }
 
+    purgeLinks() {
+        this.collectorInstance = null;
+        this.linkedInstances = [];
+
+        return this;
+    }
+
     isLinked() {
         return (
             this.getDecoratorMetadata().options.linkable &&
