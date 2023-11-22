@@ -580,6 +580,7 @@ export class AiXpandClient extends EventEmitter2 {
                 signature,
                 name: this.registeredPlugins[signature].instanceConfig.getSchema().name,
                 description: this.registeredPlugins[signature].instanceConfig.getSchema().description,
+                linkable: this.registeredPlugins[signature].instanceConfig.getSchema().linkable ?? false,
             }));
     }
 
