@@ -43,10 +43,12 @@ import { AiXpandBlockchainOptions, AiXpBC } from './utils/aixp.bc';
 import * as path from 'path';
 import { NodeRequestManager } from './models/node.requests/node.request.manager';
 import { NodeRequest } from "./models/node.requests/node.request";
+import { OnDemandInput } from "./models/dct/on.demand.input.dct";
 
 export enum DataCaptureThreadType {
     DUMMY_STREAM = 'ADummyStructStream',
     VIDEO_STREAM = 'VideoStream',
+    ON_DEMAND_INPUT = 'OnDemandInput',
     VIDEO_FILE_MAP_REDUCE = 'video_file_map_reduce',
     VIDEO_FILE = 'VideoFile',
     SINGLE_CROP_META_STREAM = 'SingleCropMetaStream',
@@ -228,7 +230,7 @@ export class AiXpandClient extends EventEmitter2 {
         [`${DataCaptureThreadType.META_STREAM}`]: MetaStream,
         [`${DataCaptureThreadType.SINGLE_CROP_META_STREAM}`]: SingleCropMetaStream,
         [`${DataCaptureThreadType.DUMMY_STREAM}`]: DummyStream,
-        // [`${DataCaptureThreadType.VIDEO_FILE_MAP_REDUCE}`]: VideoFileMultiNode,
+        [`${DataCaptureThreadType.ON_DEMAND_INPUT}`]: OnDemandInput,
         [`${DataCaptureThreadType.VIDEO_FILE}`]: VideoFile,
         [`${DataCaptureThreadType.VOID_STREAM}`]: Void,
     };
@@ -726,6 +728,7 @@ export class AiXpandClient extends EventEmitter2 {
                 ]);
                 break;
             case AiXpandCommandAction.UPDATE_CONFIG:
+            case AiXpandCommandAction.PIPELINE_COMMAND:
                 watches.push([executionEngine, message['PAYLOAD']['NAME'], null, null]);
 
                 break;

@@ -18,6 +18,7 @@ export class NodeRequestManager {
                 request = new UpdatePipelineInstanceRequest(this, onSuccess, onFail);
                 break;
             case AiXpandCommandAction.UPDATE_CONFIG:
+            case AiXpandCommandAction.PIPELINE_COMMAND:
                 request = new UpdateConfigRequest(this, onSuccess, onFail);
                 break;
             case AiXpandCommandAction.ARCHIVE_CONFIG:

@@ -156,6 +156,10 @@ export class AiXpandPipeline {
         return affectedPipelines;
     }
 
+    sendCommand(command: any) {
+        return this.client.publish(this.node, this.getRawPipelineCommandPayload(this.dct.id, command));
+    }
+
     sendInstanceCommand(message: any) {
         return this.client.publish(this.node, message);
     }
@@ -279,5 +283,15 @@ export class AiXpandPipeline {
                 break;
             }
         }
+    }
+
+    private getRawPipelineCommandPayload(pipelineName: string, command: any) {
+        return {
+            PAYLOAD: {
+                NAME: pipelineName,
+                PIPELINE_COMMAND : command,
+            },
+            ACTION: AiXpandCommandAction.PIPELINE_COMMAND,
+        };
     }
 }
