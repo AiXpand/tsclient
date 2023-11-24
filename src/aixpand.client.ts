@@ -1314,7 +1314,10 @@ export class AiXpandClient extends EventEmitter2 {
                 const linkedInstance = this.pipelines[message.host.id][linkedInstanceInfo[0]].getPluginInstance(
                     linkedInstanceInfo[1],
                 );
-                mainInstance.link(linkedInstance);
+
+                if (linkedInstance) {
+                    mainInstance.link(linkedInstance);
+                }
             });
         });
     }

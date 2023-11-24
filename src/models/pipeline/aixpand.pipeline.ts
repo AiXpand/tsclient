@@ -129,17 +129,22 @@ export class AiXpandPipeline {
 
     removePluginInstance(instance: AiXpandPluginInstance<any>): string[] {
         const affectedPipelines: string[] = [this.dct.id];
+
         if (instance.isLinked()) {
             const mainInstance = instance.getCollectorInstance();
             if (!mainInstance) {
                 // removing main instance; recalculate linking map
                 const linkedInstances = instance.getLinkedInstances();
-                linkedInstances[0].setCollectorInstance(null);
-                affectedPipelines.push(linkedInstances[0].getStreamId());
+                if (linkedInstances.length > 0) {
+                    const newMain = linkedInstances.pop();
+                    newMain.purgeLinks();
 
-                for (let i = 1; i < linkedInstances.length; i++) {
-                    linkedInstances[0].link(linkedInstances[i]);
-                    affectedPipelines.push(linkedInstances[i].getStreamId());
+                    linkedInstances.forEach((collected) => {
+                        collected.purgeLinks();
+                        newMain.link(collected);
+                    });
+
+                    affectedPipelines.push(newMain.getStreamId());
                 }
             } else {
                 // removing linked instance
