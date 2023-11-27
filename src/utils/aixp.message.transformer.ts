@@ -187,7 +187,7 @@ const heartbeatTransformer = (
 
                     heartbeat.activePlugins.push(pluginInstance);
 
-                    if (instance.LINKED_INSTANCES) {
+                    if (instance.LINKED_INSTANCES && instance.LINKED_INSTANCES.length > 0 && !!instanceStats?.pipelineId) {
                         heartbeat.links[pluginInstance.id] = {
                             ownPipeline: instanceStats.pipelineId,
                             instances: instance.LINKED_INSTANCES,
