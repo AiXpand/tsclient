@@ -60,11 +60,13 @@ export const serialize = <T extends object>(
         if (linkInfo && linkInfo.links.collector === null && linkInfo.links.instances.length === 0) {
             // single instance
             serializedObject[SINGLE_INSTANCE] = true;
+            serializedObject[LINKED_INSTANCES] = [];
         }
 
         if (linkInfo && linkInfo.links.collector !== null) {
             // subordinated linked instance
             serializedObject[SINGLE_INSTANCE] = false;
+            serializedObject[LINKED_INSTANCES] = [];
         }
 
         if (linkInfo && linkInfo.links.instances.length > 0) {
