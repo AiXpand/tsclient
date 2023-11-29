@@ -15,6 +15,10 @@ export enum ResponseCodes {
 
     PLUGIN_OK = 100,
     PLUGIN_FAILED = -PLUGIN_OK,
+    PLUGIN_PAUSE_OK = 110,
+    PLUGIN_PAUSE_FAILED = -PLUGIN_PAUSE_OK,
+    PLUGIN_RESUME_OK = 111,
+    PLUGIN_RESUME_FAILED = -PLUGIN_RESUME_OK,
 }
 
 export class Target {

@@ -21,7 +21,19 @@ export class UpdatePipelineInstanceRequest extends NodeRequest {
             case ResponseCodes.PLUGIN_OK:
                 this.resolve(notification);
                 break;
+            case ResponseCodes.PLUGIN_RESUME_OK:
+                this.resolve(notification);
+                break;
+            case ResponseCodes.PLUGIN_PAUSE_OK:
+                this.resolve(notification);
+                break;
             case ResponseCodes.PLUGIN_FAILED:
+                this.reject(notification);
+                break;
+            case ResponseCodes.PLUGIN_RESUME_FAILED:
+                this.reject(notification);
+                break;
+            case ResponseCodes.PLUGIN_PAUSE_FAILED:
                 this.reject(notification);
                 break;
         }
