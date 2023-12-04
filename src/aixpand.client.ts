@@ -44,11 +44,13 @@ import * as path from 'path';
 import { NodeRequestManager } from './models/node.requests/node.request.manager';
 import { NodeRequest } from "./models/node.requests/node.request";
 import { OnDemandInput } from "./models/dct/on.demand.input.dct";
+import { OnDemandTextInput } from "./models/dct/on.demand.text.input.dct";
 
 export enum DataCaptureThreadType {
     DUMMY_STREAM = 'ADummyStructStream',
     VIDEO_STREAM = 'VideoStream',
     ON_DEMAND_INPUT = 'OnDemandInput',
+    ON_DEMAND_TEXT_INPUT = 'OnDemandTextInput',
     VIDEO_FILE_MAP_REDUCE = 'video_file_map_reduce',
     VIDEO_FILE = 'VideoFile',
     SINGLE_CROP_META_STREAM = 'SingleCropMetaStream',
@@ -231,6 +233,7 @@ export class AiXpandClient extends EventEmitter2 {
         [`${DataCaptureThreadType.SINGLE_CROP_META_STREAM}`]: SingleCropMetaStream,
         [`${DataCaptureThreadType.DUMMY_STREAM}`]: DummyStream,
         [`${DataCaptureThreadType.ON_DEMAND_INPUT}`]: OnDemandInput,
+        [`${DataCaptureThreadType.ON_DEMAND_TEXT_INPUT}`]: OnDemandTextInput,
         [`${DataCaptureThreadType.VIDEO_FILE}`]: VideoFile,
         [`${DataCaptureThreadType.VOID_STREAM}`]: Void,
     };

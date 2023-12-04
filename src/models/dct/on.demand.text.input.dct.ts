@@ -4,19 +4,19 @@ import { IsObject } from 'class-validator';
 import { convertKeysToAiXpFormat } from '../../utils/aixp.helper.functions';
 
 @DataCaptureThreadConfig()
-export class OnDemandInput {
+export class OnDemandTextInput {
     @Bind('CAP_RESOLUTION')
     capResolution: number;
 
     @Bind('TYPE')
-    type: string = DataCaptureThreadType.ON_DEMAND_INPUT;
+    type: string = DataCaptureThreadType.ON_DEMAND_TEXT_INPUT;
 
     @Bind('STREAM_CONFIG_METADATA', { nullable: true })
     metadata: any;
 
     static make(config: any = {}) {
-        const schema = OnDemandInput.getSchema();
-        const instance = new OnDemandInput();
+        const schema = OnDemandTextInput.getSchema();
+        const instance = new OnDemandTextInput();
 
         if (!IsObject(config)) {
             config = {};
@@ -41,9 +41,9 @@ export class OnDemandInput {
 
     static getSchema() {
         return {
-            name: 'On Demand Input',
-            description: 'A DCT designed to wrap on-demand generic input models.',
-            type: DataCaptureThreadType.ON_DEMAND_INPUT,
+            name: 'On Demand Text Input',
+            description: 'A DCT designed to wrap on-demand text input models.',
+            type: DataCaptureThreadType.ON_DEMAND_TEXT_INPUT,
             fields: [
                 {
                     key: 'capResolution',
