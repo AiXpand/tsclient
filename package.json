@@ -1,6 +1,6 @@
 {
   "name": "@aixpand/client",
-  "version": "0.28.4",
+  "version": "0.29.2",
   "description": "This is the Typescript client for the AiXpand network.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -10,6 +10,9 @@
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
     "test": "jest",
     "test:watch": "jest --watch"
+  },
+  "bin": {
+    "aixpand": "./dist/aixpand.cli.js"
   },
   "repository": {
     "type": "git",
@@ -46,7 +49,8 @@
     "rxjs": "^7.8.1",
     "typescript": "^5.1.6",
     "uuid": "^9.0.0",
-    "winston": "^3.10.0"
+    "winston": "^3.10.0",
+    "yargs": "^17.7.2"
   },
   "devDependencies": {
     "@jest/globals": "^29.7.0",

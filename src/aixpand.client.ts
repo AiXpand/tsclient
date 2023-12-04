@@ -334,6 +334,10 @@ export class AiXpandClient extends EventEmitter2 {
         return this.initiator;
     }
 
+    getBlockChainAddress() {
+        return this.blockchainEngine.getAddress();
+    }
+
     /**
      * This method connects the client to the network and attaches all the necessary callbacks on the network streams.
      */

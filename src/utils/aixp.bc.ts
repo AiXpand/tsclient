@@ -5,6 +5,7 @@ import * as asn1 from 'asn1.js';
 import stringify from 'json-stable-stringify';
 import { base64ToUrlSafeBase64, urlSafeBase64ToBase64 } from './aixp.helper.functions';
 import { AiXpandException } from '../aixpand.exception';
+import { Buffer } from "node:buffer";
 
 const ec = new elliptic.ec('secp256k1');
 
@@ -48,6 +49,34 @@ export class AiXpBC {
         if (this.debugMode) {
             console.log('AiXpand Blockchain address: ' + this.getAddress());
         }
+    }
+    
+    static generateKeys() {
+        return crypto.generateKeyPairSync('ec', {
+            namedCurve: 'secp256k1',
+            publicKeyEncoding: {
+                type: 'spki',
+                format: 'der',
+            },
+            privateKeyEncoding: {
+                type: 'pkcs8',
+                format: 'der',
+            },
+        });
+    }
+
+    static compressPublicKey(publicKey: Buffer): string {
+        const publicKeyBytes = SPKI.decode(publicKey, 'der').publicKey.data;
+        const compressedPublicKeyB64 = Buffer.from(
+            ec.keyFromPublic(publicKeyBytes, 'hex').getPublic(true, 'hex'),
+            'hex',
+        ).toString('base64');
+
+        return base64ToUrlSafeBase64(compressedPublicKeyB64);
+    }
+
+    static addressFromPublicKey(publicKey: Buffer): string {
+        return ADDR_PREFIX + AiXpBC.compressPublicKey(publicKey);
     }
 
     getPublicKeyDER(): string {
@@ -201,17 +230,7 @@ export class AiXpBC {
     }
 
     private generateAndSaveKeys(filePath?: string) {
-        const keyPair = crypto.generateKeyPairSync('ec', {
-            namedCurve: 'secp256k1',
-            publicKeyEncoding: {
-                type: 'spki',
-                format: 'der',
-            },
-            privateKeyEncoding: {
-                type: 'pkcs8',
-                format: 'der',
-            },
-        });
+        const keyPair = AiXpBC.generateKeys();
 
         if (filePath) {
             const savedKeys = {
@@ -226,13 +245,7 @@ export class AiXpBC {
     }
 
     private constructCompressedPublicKey(): string {
-        const publicKeyBytes = SPKI.decode(this.keyPair.publicKey, 'der').publicKey.data;
-        const compressedPublicKeyB64 = Buffer.from(
-            ec.keyFromPublic(publicKeyBytes, 'hex').getPublic(true, 'hex'),
-            'hex',
-        ).toString('base64');
-
-        return base64ToUrlSafeBase64(compressedPublicKeyB64);
+        return AiXpBC.compressPublicKey(this.keyPair.publicKey);
     }
 
     private signHash(binHash: Buffer): string {
