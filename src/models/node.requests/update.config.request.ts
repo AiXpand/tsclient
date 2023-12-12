@@ -25,6 +25,7 @@ export class UpdateConfigRequest extends NodeRequest {
             case ResponseCodes.PLUGIN_PAUSE_OK:
             case ResponseCodes.PLUGIN_WORKING_HOURS_SHIFT_START:
             case ResponseCodes.PLUGIN_WORKING_HOURS_SHIFT_END:
+            case ResponseCodes.PLUGIN_CONFIG_IN_PAUSE_OK:
                 this.resolve(notification);
                 break;
             case ResponseCodes.PIPELINE_FAILED:
@@ -34,6 +35,7 @@ export class UpdateConfigRequest extends NodeRequest {
             case ResponseCodes.PLUGIN_PAUSE_FAILED:
             case ResponseCodes.PLUGIN_WORKING_HOURS_SHIFT_START_FAILED:
             case ResponseCodes.PLUGIN_WORKING_HOURS_SHIFT_END_FAILED:
+            case ResponseCodes.PLUGIN_CONFIG_IN_PAUSE_FAILED:
                 this.reject(notification);
                 break;
         }
