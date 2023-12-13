@@ -22,13 +22,13 @@ import {
     AiXPPayloadData,
     CacheType,
     Dictionary,
-    DummyStream,
+    DummyStream, LiteMediaServerStream,
     MetaStream,
     MqttOptions,
     PluginRegistration,
     VideoStream,
-    Void,
-} from './models';
+    Void
+} from "./models";
 import { AiXpandException } from './aixpand.exception';
 import { deserialize, transformer } from './utils';
 import { v4 as uuidv4 } from 'uuid';
@@ -49,6 +49,7 @@ import { OnDemandTextInput } from "./models/dct/on.demand.text.input.dct";
 export enum DataCaptureThreadType {
     DUMMY_STREAM = 'ADummyStructStream',
     VIDEO_STREAM = 'VideoStream',
+    LITE_MEDIA_SERVER_STREAM = 'LITE_MEDIA_SERVER',
     ON_DEMAND_INPUT = 'OnDemandInput',
     ON_DEMAND_TEXT_INPUT = 'OnDemandTextInput',
     VIDEO_FILE_MAP_REDUCE = 'video_file_map_reduce',
@@ -229,6 +230,7 @@ export class AiXpandClient extends EventEmitter2 {
      */
     private registeredDCTs: Dictionary<any> = {
         [`${DataCaptureThreadType.VIDEO_STREAM}`]: VideoStream,
+        [`${DataCaptureThreadType.LITE_MEDIA_SERVER_STREAM}`]: LiteMediaServerStream,
         [`${DataCaptureThreadType.META_STREAM}`]: MetaStream,
         [`${DataCaptureThreadType.SINGLE_CROP_META_STREAM}`]: SingleCropMetaStream,
         [`${DataCaptureThreadType.DUMMY_STREAM}`]: DummyStream,

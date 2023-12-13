@@ -1,5 +1,6 @@
 export * from './aixpand.data.capture.thread';
 export * from './dummy.stream.dct';
+export * from './lite.media.server.stream.dct';
 export * from './meta.stream.dct';
 export * from './on.demand.input.dct';
 export * from './on.demand.text.input.dct';
