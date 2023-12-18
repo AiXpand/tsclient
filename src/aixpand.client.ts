@@ -45,10 +45,12 @@ import { NodeRequestManager } from './models/node.requests/node.request.manager'
 import { NodeRequest } from "./models/node.requests/node.request";
 import { OnDemandInput } from "./models/dct/on.demand.input.dct";
 import { OnDemandTextInput } from "./models/dct/on.demand.text.input.dct";
+import { VideoStreamFFMPEG } from "./models/dct/video.stream.ffmpeg.dct";
 
 export enum DataCaptureThreadType {
     DUMMY_STREAM = 'ADummyStructStream',
     VIDEO_STREAM = 'VideoStream',
+    VIDEO_STREAM_FFMPEG = 'VideoStreamFfmpeg',
     LITE_MEDIA_SERVER_STREAM = 'LITE_MEDIA_SERVER',
     ON_DEMAND_INPUT = 'OnDemandInput',
     ON_DEMAND_TEXT_INPUT = 'OnDemandTextInput',
@@ -231,6 +233,7 @@ export class AiXpandClient extends EventEmitter2 {
     private registeredDCTs: Dictionary<any> = {
         [`${DataCaptureThreadType.VIDEO_STREAM}`]: VideoStream,
         [`${DataCaptureThreadType.LITE_MEDIA_SERVER_STREAM}`]: LiteMediaServerStream,
+        [`${DataCaptureThreadType.VIDEO_STREAM_FFMPEG}`]: VideoStreamFFMPEG,
         [`${DataCaptureThreadType.META_STREAM}`]: MetaStream,
         [`${DataCaptureThreadType.SINGLE_CROP_META_STREAM}`]: SingleCropMetaStream,
         [`${DataCaptureThreadType.DUMMY_STREAM}`]: DummyStream,
