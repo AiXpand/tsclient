@@ -171,15 +171,7 @@ const heartbeatTransformer = (
 
                     if (instanceStats) {
                         pluginInstance
-                            .updateMetadata(instanceStats.frequency, instanceStats.outsideWorkingHours, {
-                                init: new Date(instanceStats.timers.init),
-                                exec: new Date(instanceStats.timers.exec),
-                                config: new Date(instanceStats.timers.config),
-                                error: {
-                                    first: instanceStats.timers.firstError,
-                                    last: instanceStats.timers.lastError,
-                                },
-                            })
+                            .updateMetadata(instanceStats.frequency, instanceStats.outsideWorkingHours, instanceStats)
                             .setStreamId(instanceStats.pipelineId);
                     }
 

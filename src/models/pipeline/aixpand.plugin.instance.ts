@@ -7,16 +7,6 @@ import { AiXpandAlerter } from '../aixpand.alerter';
 import { AiXpandPipeline } from './aixpand.pipeline';
 import { Dictionary } from '../dictionary';
 
-export type PluginInstanceTimers = {
-    init?: Date | null;
-    exec?: Date | null;
-    config?: Date | null;
-    error?: {
-        first?: Date | null;
-        last?: Date | null;
-    };
-};
-
 export class AiXpandPluginInstance<T extends object> {
     /**
      * The instance id.
@@ -50,9 +40,9 @@ export class AiXpandPluginInstance<T extends object> {
     public alerter: AiXpandAlerter;
 
     /**
-     * Plugin timers that measure different aspects of this specific instance.
+     * Plugin instance stats that measure different aspects of this specific instance.
      */
-    public timers: PluginInstanceTimers = null;
+    public instanceStats = null;
 
     /**
      * Flag signaling whether this specific plugin instance is outside working hours.
@@ -333,12 +323,16 @@ export class AiXpandPluginInstance<T extends object> {
         return this;
     }
 
-    updateMetadata(frequency: number = null, outsideWorkingHours = false, timers: PluginInstanceTimers = null) {
+    updateMetadata(frequency: number = null, outsideWorkingHours = false, stats = null) {
         this.frequency = frequency;
-        this.timers = timers;
+        this.instanceStats = stats;
         this.outsideWorkingHours = outsideWorkingHours;
 
         return this;
+    }
+
+    getInstanceStats() {
+        return this.instanceStats;
     }
 
     setStreamId(streamId: string) {
