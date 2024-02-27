@@ -251,6 +251,18 @@ export class AiXpandClient extends EventEmitter2 {
      */
     private networkStatus: Dictionary<any> = {};
 
+    /**
+     * AiXpand Supervisor Node Kubernetes Cluster status cache. This information is compiled from the
+     * K8S_MON application output from the network supervisor nodes.
+     *
+     * @private
+     */
+    private clusterStatus = {
+        supervisor: null,
+        status: {},
+        timestamp: null,
+    };
+
     private registeredMessageDecoders = {
         cavi2: (message) => {
             return cavi2Decoder(message);
@@ -907,6 +919,14 @@ export class AiXpandClient extends EventEmitter2 {
         return mostRecent;
     }
 
+    getK8sClusterStatus() {
+        if (this.clusterStatus.timestamp === null) {
+            return null;
+        }
+
+        return this.clusterStatus;
+    }
+
     /**
      * Internal method for connecting to the AiXpand MQTT network.
      *
@@ -1074,6 +1094,16 @@ export class AiXpandClient extends EventEmitter2 {
                                 timestamp: message.EE_TIMESTAMP,
                             };
                         }
+                    }
+
+                    if (
+                        message.EE_PAYLOAD_PATH &&
+                        message.EE_PAYLOAD_PATH[1]?.toLowerCase() === 'admin_pipeline' &&
+                        message.EE_PAYLOAD_PATH[2]?.toLowerCase() === 'k8s_monitor_01'
+                    ) {
+                        this.clusterStatus.supervisor = message.EE_PAYLOAD_PATH[0];
+                        this.clusterStatus.status = message.K8S_NODES;
+                        this.clusterStatus.timestamp = message.EE_TIMESTAMP;
                     }
                 }),
             )

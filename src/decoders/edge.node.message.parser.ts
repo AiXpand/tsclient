@@ -173,6 +173,7 @@ export type ActivePluginData = {
     signature: string;
     pipelineId: string;
     instanceId: string;
+    processDelay: number;
     frequency: number;
     totalPayloads: number;
     outsideWorkingHours: boolean;
@@ -432,6 +433,7 @@ const rawNetworkHeartbeatFormatter = async (parsedMessage, originalMessage): Pro
                 signature: pluginData.SIGNATURE,
                 pipelineId: pluginData.STREAM_ID,
                 instanceId: pluginData.INSTANCE_ID,
+                processDelay: pluginData.PROCESS_DELAY,
                 frequency: pluginData.FREQUENCY,
                 totalPayloads: pluginData.TOTAL_PAYLOAD_COUNT,
                 outsideWorkingHours: pluginData.OUTSIDE_WORKING_HOURS,
