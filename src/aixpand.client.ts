@@ -495,10 +495,10 @@ export class AiXpandClient extends EventEmitter2 {
                 message: `Cannot restart an Execution Engine not in your fleet: "${engine}"`,
             });
 
-            return new Promise((resolve) => {
-                resolve({
+            return new Promise((resolve, reject) => {
+                reject({
                     data: {
-                        notification: 'Unknown execution engine.',
+                        notification: `Cannot restart an Execution Engine not in your fleet: "${engine}"`,
                     },
                 });
             });
@@ -777,6 +777,14 @@ export class AiXpandClient extends EventEmitter2 {
                 // @ts-ignore
                 this.blockchainEngine.sign(message),
             );
+
+            if (watches.length === 0) {
+                resolve({
+                    data: {
+                        notification: `${message['ACTION']} command sent.`,
+                    },
+                });
+            }
         });
     }
 
