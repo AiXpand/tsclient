@@ -141,18 +141,20 @@ export class AiXpBC {
         const hashHex = hash.toString('hex');
 
         if (hashHex != receivedHash) {
-            hashResult = false;
-            if (this.debugMode) {
-                console.log(
-                    'Hashes do not match or public key is missing:\n',
-                    '  Computed: ' + hashHex + '\n',
-                    '  Received: ' + receivedHash + '\n',
-                    '  Public key:' + pkB64 + '\n',
-                    "  Stringify: '" + strData + "'",
-                );
-            }
-        } else {
-            hashResult = true;
+          hashResult = false;          
+          if (this.debugMode) {
+            console.log(
+              "Hashes do not match or public key is missing:\n",
+              "  Computed: " + hashHex + "\n",
+              "  Received: " + receivedHash + "\n", 
+              "  Public key:" + pkB64 + "\n",
+              "  Data: " + JSON.stringify(objData) + "\n",
+              "  Stringify: '" + strData + "'",
+            );  
+          }
+        }
+        else {
+          hashResult = true;
         }
 
         if (pkB64) {
