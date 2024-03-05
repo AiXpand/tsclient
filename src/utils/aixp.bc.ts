@@ -204,6 +204,16 @@ export class AiXpBC {
         return hashResult && signatureResult;
     }
 
+    // TODO:
+    encrypt(message, destinationAddress) {
+        // encrypt key: own private-key + destination public-key
+    }
+
+    // TODO:
+    decrypt(message, sourceAddress) {
+        // decrypt key: own private-key + source public-key
+    }
+
     private loadOrCreateKeys(filePath) {
         try {
             const savedKeys = fs.readFileSync(filePath, { encoding: 'utf8' });

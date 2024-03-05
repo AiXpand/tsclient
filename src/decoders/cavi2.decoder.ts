@@ -1,6 +1,22 @@
 const mandatoryKeys = ['EE_SIGN', 'EE_SENDER', 'EE_HASH', 'EE_PAYLOAD_PATH'];
 
-export const cavi2Decoder = (message): any => {
+export const cavi2Decoder = (message) => {
+    try {
+        return decoder(message);
+    } catch (e) {
+        console.log('INTERCEPTED BADLY FORMATTED MESSAGE:');
+        console.dir(message, { depth: null });
+        console.log('------------------------------------');
+        console.log(e);
+
+        // hack until we implement encrypt/decrypt support in SDK
+        return {
+            EE_ID: 'skip-this-message',
+        };
+    }
+};
+
+const decoder = (message): any => {
     if (message.messageID) delete message.messageID;
     if (message.SB_IMPLEMENTATION) delete message.SB_IMPLEMENTATION;
     if (message.EE_FORMATTER) delete message.EE_FORMATTER;
