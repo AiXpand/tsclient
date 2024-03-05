@@ -3,6 +3,9 @@ import * as fs from 'fs';
 import * as elliptic from 'elliptic';
 import * as asn1 from 'asn1.js';
 import stringify from 'json-stable-stringify';
+
+import hkdf from 'futoin-hkdf';
+
 import { base64ToUrlSafeBase64, urlSafeBase64ToBase64 } from './aixp.helper.functions';
 import { AiXpandException } from '../aixpand.exception';
 import { Buffer } from "node:buffer";
@@ -77,6 +80,22 @@ export class AiXpBC {
 
     static addressFromPublicKey(publicKey: Buffer): string {
         return ADDR_PREFIX + AiXpBC.compressPublicKey(publicKey);
+    }
+
+    static addressToPublicKey(address: string): crypto.KeyObject {
+        const pkB64 = address.replace(ADDR_PREFIX, '');
+        const uncompressedPublicKeyHex = ec
+        .keyFromPublic(Buffer.from(urlSafeBase64ToBase64(pkB64), 'base64').toString('hex'), 'hex')
+        .getPublic(false, 'hex');
+
+        // Manually create DER formatted public key
+        const publicKeyDerManual = '3056301006072a8648ce3d020106052b8104000a034200' + uncompressedPublicKeyHex;
+        const publicKeyObj = crypto.createPublicKey({
+            key: Buffer.from(publicKeyDerManual, 'hex'),
+            format: 'der',
+            type: 'spki',
+        });        
+        return publicKeyObj;
     }
 
     getPublicKeyDER(): string {
@@ -159,17 +178,8 @@ export class AiXpBC {
 
         if (pkB64) {
             const signatureBuffer = Buffer.from(urlSafeBase64ToBase64(signatureB64), 'base64');
-            const uncompressedPublicKeyHex = ec
-                .keyFromPublic(Buffer.from(urlSafeBase64ToBase64(pkB64), 'base64').toString('hex'), 'hex')
-                .getPublic(false, 'hex');
 
-            // Manually create DER formatted public key
-            const publicKeyDerManual = '3056301006072a8648ce3d020106052b8104000a034200' + uncompressedPublicKeyHex;
-            const publicKeyObj = crypto.createPublicKey({
-                key: Buffer.from(publicKeyDerManual, 'hex'),
-                format: 'der',
-                type: 'spki',
-            });
+            const publicKeyObj = AiXpBC.addressToPublicKey(pkB64);
 
             signatureResult = crypto.verify(
                 null,
@@ -204,16 +214,6 @@ export class AiXpBC {
             }
         }
         return hashResult && signatureResult;
-    }
-
-    // TODO:
-    encrypt(message, destinationAddress) {
-        // encrypt key: own private-key + destination public-key
-    }
-
-    // TODO:
-    decrypt(message, sourceAddress) {
-        // decrypt key: own private-key + source public-key
     }
 
     private loadOrCreateKeys(filePath) {
@@ -286,4 +286,82 @@ export class AiXpBC {
             throw new AiXpandException('Unsupported format. Format must be either "object" or "json".');
         }
     }
+
+
+    // encrypt-decrypt area
+
+    private deriveSharedKey(peerPublicKey: crypto.KeyObject): Buffer {
+        // Assuming `this.keyPair.privateKey` is the private key object of the instance.
+        // We need to convert the peer's public key to a format that the ECDH can use.
+        const ecdh = crypto.createECDH('secp256k1');
+        ecdh.setPrivateKey(this.keyPair.privateKey instanceof Buffer ? this.keyPair.privateKey : this.keyPair.privateKey.export({ type: 'sec1', format: 'der' }));
+
+        // Compute the shared secret using the peer's public key.
+        // Ensure the public key is in the correct format; if it's a string, convert it to a Buffer.
+        // const peerPublicKeyBuffer = peerPublicKey instanceof Buffer ? peerPublicKey : peerPublicKey.export({ type: 'spki', format: 'der' });
+        const peerPublicKeyBuffer = Buffer.from(peerPublicKey.export({ type: 'spki', format: 'der' }));
+        const sharedSecret = ecdh.computeSecret(peerPublicKeyBuffer);
+
+        // Use HKDF to derive a key from the shared secret.
+        // crypto.createHkdf does not exist in Node's crypto module as of my last update.
+        // You will need a custom HKDF implementation or use a library that provides HKDF.
+        // For demonstration, here's a pseudo-implementation based on how you might expect to use it.
+        // Note: This pseudo-code does not run as-is. You must replace it with an actual HKDF implementation.
+
+        const key = hkdf(sharedSecret, 32, {
+          info: 'AiXp handshake data',
+          salt: Buffer.alloc(0), // Using an empty salt is safer than undefined.
+          hash: 'SHA-256',
+        });
+      
+        const hkdfKey = Buffer.from(key);        
+
+        return hkdfKey;
+    }
+
+    encrypt(message: string, destinationAddress: string): string {
+        const destinationPublicKey = AiXpBC.addressToPublicKey(destinationAddress);
+    
+        // Assuming deriveSharedKey replicates Python's __derive_shared_key functionality
+        const sharedKey = this.deriveSharedKey(destinationPublicKey);
+    
+        // AES-GCM Encryption
+        const iv = crypto.randomBytes(12); // Nonce
+        const cipher = crypto.createCipheriv('aes-256-gcm', sharedKey, iv);
+        let encrypted = cipher.update(message, 'utf8');
+        encrypted = Buffer.concat([encrypted, cipher.final()]);
+    
+        // Prepend nonce to the ciphertext
+        const encryptedData = Buffer.concat([iv, encrypted, cipher.getAuthTag()]);
+    
+        // Base64 encode
+        return encryptedData.toString('base64');
+    }
+  
+
+    decrypt(encryptedDataB64: string, sourceAddress: string): string {
+        const sourcePublicKey = AiXpBC.addressToPublicKey(sourceAddress);
+    
+        // Base64 decode
+        const encryptedData = Buffer.from(encryptedDataB64, 'base64');
+    
+        // Extract nonce and ciphertext
+        const nonce = encryptedData.slice(0, 12);
+        const ciphertext = encryptedData.slice(12, encryptedData.length - 16);
+        const authTag = encryptedData.slice(encryptedData.length - 16);
+    
+        // Derive shared key
+        const sharedKey = this.deriveSharedKey(sourcePublicKey);
+    
+        // AES-GCM Decryption
+        const decipher = crypto.createDecipheriv('aes-256-gcm', sharedKey, nonce);
+        decipher.setAuthTag(authTag);
+        let decrypted = decipher.update(ciphertext);
+        decrypted = Buffer.concat([decrypted, decipher.final()]);
+    
+        return decrypted.toString('utf8');
+    }
+     
 }
+
+
