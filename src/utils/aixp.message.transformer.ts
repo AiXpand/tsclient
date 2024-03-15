@@ -166,7 +166,12 @@ const heartbeatTransformer = (
                     }
 
                     const instanceStats = activePlugins
-                        .filter((instanceStats) => instanceStats.instanceId === instance.INSTANCE_ID)
+                        .filter(
+                            (instanceStats) =>
+                                instanceStats.pipelineId === pipelineName &&
+                                instanceStats.signature === pluginType.SIGNATURE &&
+                                instanceStats.instanceId === instance.INSTANCE_ID,
+                        )
                         .pop();
 
                     if (instanceStats) {
@@ -179,7 +184,11 @@ const heartbeatTransformer = (
 
                     heartbeat.activePlugins.push(pluginInstance);
 
-                    if (instance.LINKED_INSTANCES && instance.LINKED_INSTANCES.length > 0 && !!instanceStats?.pipelineId) {
+                    if (
+                        instance.LINKED_INSTANCES &&
+                        instance.LINKED_INSTANCES.length > 0 &&
+                        !!instanceStats?.pipelineId
+                    ) {
                         heartbeat.links[pluginInstance.id] = {
                             ownPipeline: instanceStats.pipelineId,
                             instances: instance.LINKED_INSTANCES,

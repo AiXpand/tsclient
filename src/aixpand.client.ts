@@ -1201,7 +1201,9 @@ export class AiXpandClient extends EventEmitter2 {
     private heartbeatProcessor(message: AiXPMessage<AiXPHeartbeatData>) {
         this.initializeValuesForHost(message.host.id);
 
-        const timeout = message.data.node.heartbeatInterval ?? this.options.offlineTimeout;
+        const timeout = message.data.node.heartbeatInterval
+            ? message.data.node.heartbeatInterval * 5
+            : this.options.offlineTimeout;
 
         this.markAsSeen(message.host.id, timeout * 2);
         this.hydrateDCTs(message);
