@@ -1,6 +1,6 @@
 {
   "name": "@aixpand/client",
-  "version": "0.31.2",
+  "version": "0.31.4",
   "description": "This is the Typescript client for the AiXpand network.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -42,6 +42,7 @@
     "dotenv": "^16.3.1",
     "elliptic": "^6.5.4",
     "eventemitter2": "^6.4.9",
+    "futoin-hkdf": "^1.5.3",
     "js-yaml": "^4.1.0",
     "json-stable-stringify": "^1.0.2",
     "mqtt": "^5.1.2",

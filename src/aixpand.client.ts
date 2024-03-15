@@ -731,7 +731,7 @@ export class AiXpandClient extends EventEmitter2 {
 
         message['INITIATOR_ID'] = this.initiator;
         message['EE_ID'] = executionEngine;
-        message['NONCE'] = new Date();
+        message['TIME'] = new Date();
 
         const watches = [];
         if (extraWatches.length > 0) {
