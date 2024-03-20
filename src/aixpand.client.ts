@@ -40,7 +40,6 @@ import { SingleCropMetaStream } from './models/dct/single.crop.meta.stream';
 import { AiXpandInternalMessage, edgeNodeMessageParser } from './decoders/edge.node.message.parser';
 import { cavi2Decoder } from './decoders/cavi2.decoder';
 import { AiXpandBlockchainOptions, AiXpBC } from './utils/aixp.bc';
-import * as path from 'path';
 import { NodeRequestManager } from './models/node.requests/node.request.manager';
 import { NodeRequest } from "./models/node.requests/node.request";
 import { OnDemandInput } from "./models/dct/on.demand.input.dct";
@@ -271,6 +270,10 @@ export class AiXpandClient extends EventEmitter2 {
 
     private blockchainEngine: AiXpBC = null;
 
+    private encrypt = false;
+
+    private universeAddresses = {};
+
     constructor(options: AiXpandClientOptions) {
         super(options.emitterOptions ?? {});
 
@@ -321,19 +324,11 @@ export class AiXpandClient extends EventEmitter2 {
         this.mqttOptions = options.mqtt;
 
         const blockchainOptions = <AiXpandBlockchainOptions>{
-            fromFile: options.options.keyPair?.fromFile !== false,
+            key: options.options.blockchain.key ?? null,
+            debug: options.options.blockchain.debug ?? false,
         };
 
-        if (blockchainOptions.fromFile) {
-            console.log(path.join(__dirname, 'aixp.keys.json'));
-            blockchainOptions.filePath = options.options.keyPair?.filePath || path.join(__dirname, 'aixp.keys.json');
-            blockchainOptions.keyPair = null;
-        } else {
-            blockchainOptions.keyPair = {
-                privateKey: options.options.keyPair.privateKey,
-                publicKey: options.options.keyPair.publicKey,
-            };
-        }
+        this.encrypt = options.options.blockchain.encrypt ?? false;
 
         this.blockchainEngine = new AiXpBC(blockchainOptions);
         this.requestManager = new NodeRequestManager();
@@ -785,10 +780,29 @@ export class AiXpandClient extends EventEmitter2 {
                 });
             }
 
+            let toSend = { ...message };
+            if (this.encrypt === true) {
+                const encrypted = this.blockchainEngine.encrypt(
+                    JSON.stringify({
+                        ACTION: message.ACTION,
+                        PAYLOAD: message.PAYLOAD,
+                    }),
+                    this.universeAddresses[executionEngine],
+                );
+
+                toSend = {
+                    EE_IS_ENCRYPTED: true,
+                    EE_ENCRYPTED_DATA: encrypted,
+                    INITIATOR_ID: message.INITIATOR_ID,
+                    EE_ID: message.EE_ID,
+                    TIME: message.TIME,
+                };
+            }
+
             this.mqttClient.publish(
                 `${this.aixpNamespace}/${executionEngine}/config`,
                 // @ts-ignore
-                this.blockchainEngine.sign(message),
+                this.blockchainEngine.sign(toSend),
             );
 
             if (watches.length === 0) {
@@ -1044,6 +1058,24 @@ export class AiXpandClient extends EventEmitter2 {
 
                     try {
                         parsedMessage = JSON.parse(message);
+
+                        if (parsedMessage.EE_IS_ENCRYPTED !== undefined && parsedMessage.EE_IS_ENCRYPTED === true) {
+                            const decrypted = this.blockchainEngine.decrypt(
+                                parsedMessage.EE_ENCRYPTED_DATA ?? null,
+                                parsedMessage.EE_SENDER,
+                            );
+
+                            if (decrypted === null) {
+                                return { EE_FORMATTER: 'ignore-this' };
+                            }
+
+                            console.log(`Decrypted message from ${parsedMessage.EE_SENDER}...`)
+
+                            const content = JSON.parse(decrypted);
+                            Object.keys(content).forEach((key) => {
+                                parsedMessage[key] = content[key];
+                            });
+                        }
                     } catch (e) {
                         console.log(e);
                         return { EE_FORMATTER: 'ignore-this' };
@@ -1095,6 +1127,10 @@ export class AiXpandClient extends EventEmitter2 {
                                 status: message.CURRENT_NETWORK,
                                 timestamp: message.EE_TIMESTAMP,
                             };
+
+                            keys.forEach((nodeName) => {
+                                this.universeAddresses[nodeName] = message.CURRENT_NETWORK[nodeName].address;
+                            });
                         }
                     }
 
@@ -1111,6 +1147,10 @@ export class AiXpandClient extends EventEmitter2 {
             )
             .pipe(
                 filter((message: any) => {
+                    if (message.EE_ID !== undefined && message.EE_SENDER !== undefined) {
+                        this.universeAddresses[message.EE_ID] = message.EE_SENDER;
+                    }
+
                     // filter out messages from hosts not in fleet
                     if (!this.fleet[message.EE_ID]) {
                         this.universe[message.EE_ID] = <AiXpandUniverseHost>{

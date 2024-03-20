@@ -22,11 +22,10 @@ export interface AiXpandClientOptions {
     consumerGroup?: string | null;
     plugins: Dictionary<PluginRegistration>;
     options?: {
-        keyPair?: {
-            fromFile: boolean;
-            filePath?: string;
-            privateKey?: string;
-            publicKey?: string;
+        blockchain?: {
+            debug?: boolean;
+            key?: string;
+            encrypt?: boolean;
         };
         secure?: boolean;
         debug?: boolean;

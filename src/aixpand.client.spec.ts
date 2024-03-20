@@ -29,10 +29,8 @@ const aixpOptions: AiXpandClientOptions = {
     },
     name: 'jest-tests',
     options: {
-        keyPair: {
-            fromFile: false,
-            publicKey: null,
-            privateKey: null,
+        blockchain: {
+            debug: false,
         },
         offlineTimeout: 60,
         bufferPayloadsWhileBooting: false,

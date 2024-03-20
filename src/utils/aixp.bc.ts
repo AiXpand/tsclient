@@ -1,11 +1,8 @@
 import * as crypto from 'crypto';
-import * as fs from 'fs';
 import * as elliptic from 'elliptic';
 import * as asn1 from 'asn1.js';
 import stringify from 'json-stable-stringify';
-
 import hkdf from 'futoin-hkdf';
-
 import { base64ToUrlSafeBase64, urlSafeBase64ToBase64 } from './aixp.helper.functions';
 import { AiXpandException } from '../aixpand.exception';
 import { Buffer } from "node:buffer";
@@ -17,76 +14,123 @@ const EE_SENDER = 'EE_SENDER';
 const EE_HASH = 'EE_HASH';
 const ADDR_PREFIX = 'aixp_';
 const NON_DATA_FIELDS = [EE_SIGN, EE_SENDER, EE_HASH];
+
 const SPKI = asn1.define('SPKI', function () {
     this.seq().obj(
-        this.key('algorithm').seq().obj(this.key('id').objid(), this.key('namedCurve').objid()),
+        this.key('algorithm').seq().obj(
+            this.key('id').objid(),
+            this.key('namedCurve').objid()
+        ),
         this.key('publicKey').bitstr(),
     );
 });
 
+const PKCS8 = asn1.define('PKCS8PrivateKeyInfo', function () {
+    this.seq().obj(
+        this.key('version').int(),
+        this.key('algorithm').seq().obj(
+            this.key('id').objid(),
+            this.key('params').optional().any()
+        ),
+        this.octstr(
+            this.seq(
+                this.key('flag').int(),
+                this.key('content').octstr(),
+            ),
+        ),
+    );
+});
+
 export type AiXpandBlockchainOptions = {
-    fromFile: boolean;
-    filePath?: string;
-    keyPair?: {
-        publicKey: string;
-        privateKey: string;
-    } | null;
-    debugMode?: boolean;
+    key: string;
+    debug?: boolean;
 };
 
 export class AiXpBC {
-    private keyPair: { publicKey: Buffer; privateKey: crypto.KeyObject | Buffer };
+    keyPair;
+
     private readonly compressedPublicKey: string;
+
     private readonly debugMode: boolean;
 
-    constructor(options: AiXpandBlockchainOptions) {
-        if (options.fromFile) {
-            this.keyPair = this.loadOrCreateKeys(options.filePath);
-        } else if (options.keyPair && options.keyPair.privateKey && options.keyPair.publicKey) {
-            this.keyPair = this.parseKeys(options.keyPair);
+    constructor(options) {
+        if (options.key) {
+            this.keyPair = AiXpBC.deriveKeyPairFromDERHex(options.key);
         } else {
-            this.keyPair = this.generateAndSaveKeys();
+            this.keyPair = AiXpBC.generateKeys();
         }
-        this.debugMode = options.debugMode || false;
-        this.compressedPublicKey = this.constructCompressedPublicKey();
+
+        this.debugMode = options.debug || false;
+        this.compressedPublicKey = AiXpBC.compressPublicKeyObject(this.keyPair.publicKey);
+
         if (this.debugMode) {
             console.log('AiXpand Blockchain address: ' + this.getAddress());
         }
     }
-    
+
     static generateKeys() {
         return crypto.generateKeyPairSync('ec', {
             namedCurve: 'secp256k1',
-            publicKeyEncoding: {
-                type: 'spki',
-                format: 'der',
-            },
-            privateKeyEncoding: {
-                type: 'pkcs8',
-                format: 'der',
-            },
         });
     }
 
-    static compressPublicKey(publicKey: Buffer): string {
-        const publicKeyBytes = SPKI.decode(publicKey, 'der').publicKey.data;
+    static deriveKeyPairFromDERHex(hexString: string) {
+        const privateKeyBuffer = Buffer.from(hexString, 'hex');
+        const privateKey = crypto.createPrivateKey({
+            key: privateKeyBuffer,
+            format: 'der',
+            type: 'pkcs8'
+        });
+
+        const publicKey = crypto.createPublicKey(privateKey);
+        return {
+            privateKey,
+            publicKey
+        };
+    }
+
+    static publicKeyObjectToECKeyPair(publicKey: crypto.KeyObject) {
+        const key = Buffer.from(publicKey.export({ type: 'spki', format: 'der'}));
+        const publicKeyBytes = SPKI.decode(key, 'der').publicKey.data;
+
+        return ec.keyFromPublic(publicKeyBytes, 'hex');
+    }
+
+    static privateKeyObjectToECKeyPair(privateKeyObject: crypto.KeyObject) {
+        const hexPrivKey = Buffer.from(privateKeyObject.export({ type: 'pkcs8', format: 'der' }));
+        const definition = PKCS8.decode(hexPrivKey, 'der');
+        const privateKeyData = definition.content;
+
+        return ec.keyFromPrivate(privateKeyData, 'hex');
+    }
+
+    static addressToECPublicKey(address: string) {
+        const pkB64 = address.replace(ADDR_PREFIX, '');
+        return ec.keyFromPublic(
+            Buffer.from(urlSafeBase64ToBase64(pkB64), 'base64').toString('hex'),
+            'hex',
+        );
+    }
+
+    static compressPublicKeyObject(publicKey: crypto.KeyObject): string {
         const compressedPublicKeyB64 = Buffer.from(
-            ec.keyFromPublic(publicKeyBytes, 'hex').getPublic(true, 'hex'),
+            AiXpBC.publicKeyObjectToECKeyPair(publicKey).getPublic(true, 'hex'),
             'hex',
         ).toString('base64');
 
         return base64ToUrlSafeBase64(compressedPublicKeyB64);
     }
 
-    static addressFromPublicKey(publicKey: Buffer): string {
-        return ADDR_PREFIX + AiXpBC.compressPublicKey(publicKey);
+    static addressFromPublicKey(publicKey: crypto.KeyObject): string {
+        return ADDR_PREFIX + AiXpBC.compressPublicKeyObject(publicKey);
     }
 
-    static addressToPublicKey(address: string): crypto.KeyObject {
-        const pkB64 = address.replace(ADDR_PREFIX, '');
-        const uncompressedPublicKeyHex = ec
-        .keyFromPublic(Buffer.from(urlSafeBase64ToBase64(pkB64), 'base64').toString('hex'), 'hex')
-        .getPublic(false, 'hex');
+    static addressToPublicKeyUncompressed(address: string) {
+        return  AiXpBC.addressToECPublicKey(address).getPublic(false, 'hex');
+    }
+
+    static addressToPublicKeyObject(address: string): crypto.KeyObject {
+        const uncompressedPublicKeyHex = this.addressToPublicKeyUncompressed(address);
 
         // Manually create DER formatted public key
         const publicKeyDerManual = '3056301006072a8648ce3d020106052b8104000a034200' + uncompressedPublicKeyHex;
@@ -94,7 +138,8 @@ export class AiXpBC {
             key: Buffer.from(publicKeyDerManual, 'hex'),
             format: 'der',
             type: 'spki',
-        });        
+        });
+
         return publicKeyObj;
     }
 
@@ -102,33 +147,13 @@ export class AiXpBC {
         return this.keyPair.publicKey.toString('hex');
     }
 
-    getPrivateKey(): crypto.KeyObject | Buffer {
-        return this.keyPair.privateKey;
-    }
-
     getAddress(): string {
         return ADDR_PREFIX + this.compressedPublicKey;
     }
 
-    getHash(input: string | object) {
-        let inputString;
-
-        if (typeof input === 'object') {
-            inputString = stringify(input);
-        } else if (typeof input === 'string') {
-            inputString = input;
-        } else {
-            throw new AiXpandException('Unsupported input type. Input must be a string or object.');
-        }
-
-        // Hash the input string
-        const strDigest = crypto.createHash('sha256').update(inputString).digest('hex');
-        const binDigest = Buffer.from(strDigest, 'hex');
-
-        return {
-            strHash: strDigest,
-            binHash: binDigest,
-        };
+    exportAsPem() {
+        // @ts-ignore
+        return this.keyPair.privateKey.export({ type: 'pkcs8', format: 'pem' });
     }
 
     sign(input: string | object, format = 'json'): string | object {
@@ -160,26 +185,26 @@ export class AiXpBC {
         const hashHex = hash.toString('hex');
 
         if (hashHex != receivedHash) {
-          hashResult = false;          
-          if (this.debugMode) {
-            console.log(
-              "Hashes do not match or public key is missing:\n",
-              "  Computed: " + hashHex + "\n",
-              "  Received: " + receivedHash + "\n", 
-              "  Public key:" + pkB64 + "\n",
-              "  Data: " + JSON.stringify(objData) + "\n",
-              "  Stringify: '" + strData + "'",
-            );  
-          }
+            hashResult = false;
+            if (this.debugMode) {
+                console.log(
+                    "Hashes do not match or public key is missing:\n",
+                    "  Computed: " + hashHex + "\n",
+                    "  Received: " + receivedHash + "\n",
+                    "  Public key:" + pkB64 + "\n",
+                    "  Data: " + JSON.stringify(objData) + "\n",
+                    "  Stringify: '" + strData + "'",
+                );
+            }
         }
         else {
-          hashResult = true;
+            hashResult = true;
         }
 
         if (pkB64) {
             const signatureBuffer = Buffer.from(urlSafeBase64ToBase64(signatureB64), 'base64');
 
-            const publicKeyObj = AiXpBC.addressToPublicKey(pkB64);
+            const publicKeyObj = AiXpBC.addressToPublicKeyObject(pkB64);
 
             signatureResult = crypto.verify(
                 null,
@@ -213,51 +238,78 @@ export class AiXpBC {
                 }
             }
         }
+
         return hashResult && signatureResult;
     }
 
-    private loadOrCreateKeys(filePath) {
+    encrypt(message: string, destinationAddress: string): string {
+        console.log('DESTINATION ADDRESS: ', destinationAddress);
+
+
+        const destinationPublicKey = AiXpBC.addressToPublicKeyObject(destinationAddress);
+        const sharedKey = this.deriveSharedKey(destinationPublicKey);
+
+        const iv = crypto.randomBytes(12);
+        const cipher = crypto.createCipheriv('aes-256-gcm', sharedKey, iv);
+        let encrypted = cipher.update(message, 'utf8');
+        encrypted = Buffer.concat([encrypted, cipher.final()]);
+
+        const encryptedData = Buffer.concat([iv, encrypted, cipher.getAuthTag()]);
+
+        return encryptedData.toString('base64');
+    }
+
+    decrypt(encryptedDataB64: string, sourceAddress: string): string {
+        if (encryptedDataB64 === null) { return null; }
+
+        const sourcePublicKey = AiXpBC.addressToPublicKeyObject(sourceAddress);
+        const encryptedData = Buffer.from(encryptedDataB64, 'base64');
+
+        // Extract nonce and ciphertext
+        const nonce = encryptedData.slice(0, 12);
+        const ciphertext = encryptedData.slice(12, encryptedData.length - 16);
+        const authTag = encryptedData.slice(encryptedData.length - 16);
+
+        // Derive shared key
+        const sharedKey = this.deriveSharedKey(sourcePublicKey);
+
+        // AES-GCM Decryption
+        const decipher = crypto.createDecipheriv('aes-256-gcm', sharedKey, nonce);
+        decipher.setAuthTag(authTag);
+        let decrypted = decipher.update(ciphertext);
+
         try {
-            const savedKeys = fs.readFileSync(filePath, { encoding: 'utf8' });
+            decrypted = Buffer.concat([decrypted, decipher.final()]);
 
-            return this.parseKeys(JSON.parse(savedKeys));
-        } catch (error) {
-            return this.generateAndSaveKeys(filePath);
+            return decrypted.toString('utf8');
+        } catch (e) {
+            return null;
         }
     }
 
-    private parseKeys(parsedKeys: { publicKey: string; privateKey: string }) {
+    private getPrivateKey(): crypto.KeyObject {
+        return this.keyPair.privateKey;
+    }
+
+    private getHash(input: string | object) {
+        let inputString;
+
+        if (typeof input === 'object') {
+            inputString = stringify(input);
+        } else if (typeof input === 'string') {
+            inputString = input;
+        } else {
+            throw new AiXpandException('Unsupported input type. Input must be a string or object.');
+        }
+
+        // Hash the input string
+        const strDigest = crypto.createHash('sha256').update(inputString).digest('hex');
+        const binDigest = Buffer.from(strDigest, 'hex');
+
         return {
-            publicKey: Buffer.from(parsedKeys.publicKey, 'hex'),
-            privateKey: this.createPrivateKey(Buffer.from(parsedKeys.privateKey, 'hex')),
+            strHash: strDigest,
+            binHash: binDigest,
         };
-    }
-
-    private createPrivateKey(buffer: Buffer): crypto.KeyObject {
-        return crypto.createPrivateKey({
-            key: buffer,
-            format: 'der',
-            type: 'pkcs8',
-        });
-    }
-
-    private generateAndSaveKeys(filePath?: string) {
-        const keyPair = AiXpBC.generateKeys();
-
-        if (filePath) {
-            const savedKeys = {
-                publicKey: keyPair.publicKey.toString('hex'),
-                privateKey: keyPair.privateKey.toString('hex'),
-            };
-
-            fs.writeFileSync(filePath, JSON.stringify(savedKeys, null, 2), { encoding: 'utf8' });
-        }
-
-        return keyPair;
-    }
-
-    private constructCompressedPublicKey(): string {
-        return AiXpBC.compressPublicKey(this.keyPair.publicKey);
     }
 
     private signHash(binHash: Buffer): string {
@@ -287,30 +339,17 @@ export class AiXpBC {
         }
     }
 
-
-    // encrypt-decrypt area
-
     private deriveSharedKey(peerPublicKey: crypto.KeyObject): Buffer {
-        // Assuming `this.keyPair.privateKey` is the private key object of the instance.
-        // We need to convert the peer's public key to a format that the ECDH can use.
         const ecdh = crypto.createECDH('secp256k1');
-        ecdh.setPrivateKey(this.keyPair.privateKey instanceof Buffer ? this.keyPair.privateKey : this.keyPair.privateKey.export({ type: 'sec1', format: 'der' }));
+        const privateKeyHex = AiXpBC.privateKeyObjectToECKeyPair(this.keyPair.privateKey).getPrivate().toString(16);
+        ecdh.setPrivateKey(Buffer.from(privateKeyHex, 'hex'));
 
-        // Compute the shared secret using the peer's public key.
-        // Ensure the public key is in the correct format; if it's a string, convert it to a Buffer.
-        // const peerPublicKeyBuffer = peerPublicKey instanceof Buffer ? peerPublicKey : peerPublicKey.export({ type: 'spki', format: 'der' });
-        const peerPublicKeyBuffer = Buffer.from(peerPublicKey.export({ type: 'spki', format: 'der' }));
-        const sharedSecret = ecdh.computeSecret(peerPublicKeyBuffer);
-
-        // Use HKDF to derive a key from the shared secret.
-        // crypto.createHkdf does not exist in Node's crypto module as of my last update.
-        // You will need a custom HKDF implementation or use a library that provides HKDF.
-        // For demonstration, here's a pseudo-implementation based on how you might expect to use it.
-        // Note: This pseudo-code does not run as-is. You must replace it with an actual HKDF implementation.
+        const publicKeyHex = AiXpBC.publicKeyObjectToECKeyPair(peerPublicKey).getPublic('hex');
+        const sharedSecret = ecdh.computeSecret(Buffer.from(publicKeyHex, 'hex'));
 
         const key = hkdf(sharedSecret, 32, {
           info: 'AiXp handshake data',
-          salt: Buffer.alloc(0), // Using an empty salt is safer than undefined.
+          salt: Buffer.alloc(0),
           hash: 'SHA-256',
         });
       
@@ -318,50 +357,6 @@ export class AiXpBC {
 
         return hkdfKey;
     }
-
-    encrypt(message: string, destinationAddress: string): string {
-        const destinationPublicKey = AiXpBC.addressToPublicKey(destinationAddress);
-    
-        // Assuming deriveSharedKey replicates Python's __derive_shared_key functionality
-        const sharedKey = this.deriveSharedKey(destinationPublicKey);
-    
-        // AES-GCM Encryption
-        const iv = crypto.randomBytes(12); // Nonce
-        const cipher = crypto.createCipheriv('aes-256-gcm', sharedKey, iv);
-        let encrypted = cipher.update(message, 'utf8');
-        encrypted = Buffer.concat([encrypted, cipher.final()]);
-    
-        // Prepend nonce to the ciphertext
-        const encryptedData = Buffer.concat([iv, encrypted, cipher.getAuthTag()]);
-    
-        // Base64 encode
-        return encryptedData.toString('base64');
-    }
-  
-
-    decrypt(encryptedDataB64: string, sourceAddress: string): string {
-        const sourcePublicKey = AiXpBC.addressToPublicKey(sourceAddress);
-    
-        // Base64 decode
-        const encryptedData = Buffer.from(encryptedDataB64, 'base64');
-    
-        // Extract nonce and ciphertext
-        const nonce = encryptedData.slice(0, 12);
-        const ciphertext = encryptedData.slice(12, encryptedData.length - 16);
-        const authTag = encryptedData.slice(encryptedData.length - 16);
-    
-        // Derive shared key
-        const sharedKey = this.deriveSharedKey(sourcePublicKey);
-    
-        // AES-GCM Decryption
-        const decipher = crypto.createDecipheriv('aes-256-gcm', sharedKey, nonce);
-        decipher.setAuthTag(authTag);
-        let decrypted = decipher.update(ciphertext);
-        decrypted = Buffer.concat([decrypted, decipher.final()]);
-    
-        return decrypted.toString('utf8');
-    }
-     
 }
 
 

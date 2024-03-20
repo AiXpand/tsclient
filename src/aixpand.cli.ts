@@ -16,8 +16,8 @@ if (action !== 'generate') {
 
 const keyPair = AiXpBC.generateKeys();
 const hexPair = {
-    publicKey: keyPair.publicKey.toString('hex'),
-    privateKey: keyPair.privateKey.toString('hex'),
+    publicKey: keyPair.publicKey.export({ type: 'spki', format: 'der' }).toString('hex'),
+    privateKey: keyPair.privateKey.export({ type: 'pkcs8', format: 'der' }).toString('hex'),
     aixpAddr: AiXpBC.addressFromPublicKey(keyPair.publicKey),
 };
 
