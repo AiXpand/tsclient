@@ -4,7 +4,6 @@ import { BindingOptions } from './binding.options';
 export const ID_TAGS = 'ID_TAGS';
 export const LINKED_INSTANCES = 'LINKED_INSTANCES';
 export const SINGLE_INSTANCE = 'SINGLE_INSTANCE';
-export const FORCED_PAUSE = 'FORCED_PAUSE';
 export const WORKING_HOURS = 'WORKING_HOURS';
 
 const defaultOptions: BindingOptions = {
@@ -13,7 +12,7 @@ const defaultOptions: BindingOptions = {
     alwaysSerialize: false,
 };
 
-export const reservedPropertyNames = [ID_TAGS, LINKED_INSTANCES, SINGLE_INSTANCE, FORCED_PAUSE, WORKING_HOURS];
+export const reservedPropertyNames = [ID_TAGS, LINKED_INSTANCES, SINGLE_INSTANCE, WORKING_HOURS];
 
 export const Bind = (configPropertyName: string, options: BindingOptions = {}): PropertyDecorator => {
     options = { ...defaultOptions, ...options };

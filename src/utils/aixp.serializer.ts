@@ -1,6 +1,6 @@
 import 'reflect-metadata';
 import { REST_CUSTOM_EXEC_SIGNATURE } from '../abstract.rest.custom.exec.plugin';
-import { BindingOptions, FORCED_PAUSE, ID_TAGS, LINKED_INSTANCES, SINGLE_INSTANCE, WORKING_HOURS } from '../decorators';
+import { BindingOptions, ID_TAGS, LINKED_INSTANCES, SINGLE_INSTANCE, WORKING_HOURS } from '../decorators';
 import { AiXpandPluginInstance } from '../models';
 import { ANY_PLUGIN_SIGNATURE } from '../constants';
 
@@ -17,7 +17,6 @@ export const serialize = <T extends object>(
     tags: any = {},
     linkInfo: null | LinkInfo<T> = null,
     schedule: any = null,
-    forcePaused: boolean = null,
     changeset = null,
 ): any => {
     if (
@@ -80,10 +79,6 @@ export const serialize = <T extends object>(
         if (schedule) {
             serializedObject[WORKING_HOURS] = schedule;
         }
-
-        if (forcePaused !== null) {
-            serializedObject[FORCED_PAUSE] = forcePaused;
-        }
     } else if (!isDataCaptureThread && !isPluginInstanceAlerter) {
         const partSignatures = Reflect.getMetadata('signatures', instance.constructor);
         if (
@@ -117,13 +112,12 @@ export const serialize = <T extends object>(
             const embeddedConfig = embeddedProperties.get(key);
             if (embeddedConfig?.options.isArray) {
                 serializedObject[property.propertyName] = instance[key].map((item: any) =>
-                    serialize(item, signature, null, null, null, null, changesetToPass),
+                    serialize(item, signature, null, null, null, changesetToPass),
                 );
             } else if (embeddedConfig) {
                 serializedObject[property.propertyName] = serialize(
                     instance[key],
                     signature,
-                    null,
                     null,
                     null,
                     null,

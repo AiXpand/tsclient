@@ -176,7 +176,6 @@ export class AiXpandPipeline {
             instance.getTags(),
             null,
             instance.getSchedule(),
-            instance.isForcePaused(),
             instance.getChangeSet(),
         );
 
@@ -261,7 +260,6 @@ export class AiXpandPipeline {
                 plugin.getTags(),
                 linkInfo,
                 plugin.getSchedule(),
-                plugin.isForcePaused(),
             );
             collection[plugin.signature].push({
                 ...config,

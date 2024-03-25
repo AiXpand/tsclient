@@ -98,13 +98,6 @@ export class AiXpandPluginInstance<T extends object> {
      */
     private pipeline: AiXpandPipeline;
 
-    /**
-     * Flag to be set when the instance is temporarily paused.
-     *
-     * @private
-     */
-    private forcePaused: boolean = false;
-
     private pendingChanges = {};
 
     constructor(id: string, config: T, callback: CallbackFunction = null, alerter?: AiXpandAlerter) {
@@ -122,7 +115,6 @@ export class AiXpandPluginInstance<T extends object> {
         this.alerter = alerter;
         this.tags = {};
         this.callback = callback;
-        this.forcePaused = false;
     }
 
     getRawInstanceCommandPayload(command: any) {
@@ -367,22 +359,6 @@ export class AiXpandPluginInstance<T extends object> {
 
     clearCallback() {
         this.callback = null;
-
-        return this;
-    }
-
-    isForcePaused(): boolean {
-        return this.forcePaused;
-    }
-
-    forcePause() {
-        this.forcePaused = true;
-
-        return this;
-    }
-
-    resumeForcePause() {
-        this.forcePaused = false;
 
         return this;
     }

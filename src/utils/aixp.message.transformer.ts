@@ -15,7 +15,7 @@ import {
 } from '../models';
 import { deserialize } from './aixp.deserializer';
 import { REST_CUSTOM_EXEC_SIGNATURE } from '../abstract.rest.custom.exec.plugin';
-import { FORCED_PAUSE, ID_TAGS, WORKING_HOURS } from '../decorators';
+import { ID_TAGS, WORKING_HOURS } from '../decorators';
 import {
     AiXpandInternalHeartbeatData,
     AiXpandInternalMessage,
@@ -159,10 +159,6 @@ const heartbeatTransformer = (
 
                     if (instance[WORKING_HOURS]) {
                         pluginInstance.setSchedule(instance[WORKING_HOURS]);
-                    }
-
-                    if (instance[FORCED_PAUSE]) {
-                        pluginInstance.forcePause();
                     }
 
                     const instanceStats = activePlugins

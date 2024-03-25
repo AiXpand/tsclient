@@ -126,7 +126,7 @@ export class AiXpBC {
     }
 
     static addressToPublicKeyUncompressed(address: string) {
-        return  AiXpBC.addressToECPublicKey(address).getPublic(false, 'hex');
+        return AiXpBC.addressToECPublicKey(address).getPublic(false, 'hex');
     }
 
     static addressToPublicKeyObject(address: string): crypto.KeyObject {
