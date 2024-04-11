@@ -12,7 +12,8 @@ const ec = new elliptic.ec('secp256k1');
 const EE_SIGN = 'EE_SIGN';
 const EE_SENDER = 'EE_SENDER';
 const EE_HASH = 'EE_HASH';
-const ADDR_PREFIX = 'aixp_';
+const ADDR_PREFIX = '0xai_';
+const ALLOWED_PREFIXES = ['0xai_', 'aixp_'];
 const NON_DATA_FIELDS = [EE_SIGN, EE_SENDER, EE_HASH];
 
 const SPKI = asn1.define('SPKI', function () {
@@ -79,18 +80,18 @@ export class AiXpBC {
         const privateKey = crypto.createPrivateKey({
             key: privateKeyBuffer,
             format: 'der',
-            type: 'pkcs8'
+            type: 'pkcs8',
         });
 
         const publicKey = crypto.createPublicKey(privateKey);
         return {
             privateKey,
-            publicKey
+            publicKey,
         };
     }
 
     static publicKeyObjectToECKeyPair(publicKey: crypto.KeyObject) {
-        const key = Buffer.from(publicKey.export({ type: 'spki', format: 'der'}));
+        const key = Buffer.from(publicKey.export({ type: 'spki', format: 'der' }));
         const publicKeyBytes = SPKI.decode(key, 'der').publicKey.data;
 
         return ec.keyFromPublic(publicKeyBytes, 'hex');
@@ -105,11 +106,9 @@ export class AiXpBC {
     }
 
     static addressToECPublicKey(address: string) {
-        const pkB64 = address.replace(ADDR_PREFIX, '');
-        return ec.keyFromPublic(
-            Buffer.from(urlSafeBase64ToBase64(pkB64), 'base64').toString('hex'),
-            'hex',
-        );
+        const pkB64 = AiXpBC._removeAddressPrefix(address);
+
+        return ec.keyFromPublic(Buffer.from(urlSafeBase64ToBase64(pkB64), 'base64').toString('hex'), 'hex');
     }
 
     static compressPublicKeyObject(publicKey: crypto.KeyObject): string {
@@ -175,7 +174,7 @@ export class AiXpBC {
         }
 
         const signatureB64 = objReceived[EE_SIGN];
-        const pkB64 = objReceived[EE_SENDER] ? objReceived[EE_SENDER].replace(ADDR_PREFIX, '') : null;
+        const pkB64 = objReceived[EE_SENDER] ? AiXpBC._removeAddressPrefix(objReceived[EE_SENDER]) : null;
         const receivedHash = objReceived[EE_HASH];
         const objData = Object.fromEntries(
             Object.entries(objReceived).filter(([key]) => !NON_DATA_FIELDS.includes(key)),
@@ -188,16 +187,15 @@ export class AiXpBC {
             hashResult = false;
             if (this.debugMode) {
                 console.log(
-                    "Hashes do not match or public key is missing:\n",
-                    "  Computed: " + hashHex + "\n",
-                    "  Received: " + receivedHash + "\n",
-                    "  Public key:" + pkB64 + "\n",
-                    "  Data: " + JSON.stringify(objData) + "\n",
+                    'Hashes do not match or public key is missing:\n',
+                    '  Computed: ' + hashHex + '\n',
+                    '  Received: ' + receivedHash + '\n',
+                    '  Public key:' + pkB64 + '\n',
+                    '  Data: ' + JSON.stringify(objData) + '\n',
                     "  Stringify: '" + strData + "'",
                 );
             }
-        }
-        else {
+        } else {
             hashResult = true;
         }
 
@@ -245,7 +243,6 @@ export class AiXpBC {
     encrypt(message: string, destinationAddress: string): string {
         console.log('DESTINATION ADDRESS: ', destinationAddress);
 
-
         const destinationPublicKey = AiXpBC.addressToPublicKeyObject(destinationAddress);
         const sharedKey = this.deriveSharedKey(destinationPublicKey);
 
@@ -260,7 +257,9 @@ export class AiXpBC {
     }
 
     decrypt(encryptedDataB64: string, sourceAddress: string): string {
-        if (encryptedDataB64 === null) { return null; }
+        if (encryptedDataB64 === null) {
+            return null;
+        }
 
         const sourcePublicKey = AiXpBC.addressToPublicKeyObject(sourceAddress);
         const encryptedData = Buffer.from(encryptedDataB64, 'base64');
@@ -285,6 +284,22 @@ export class AiXpBC {
         } catch (e) {
             return null;
         }
+    }
+
+    /**
+     * Removes the prefix from the address.
+     *
+     * @param {string} address
+     * @return {string}
+     * @private
+     */
+    private static _removeAddressPrefix(address: string): string {
+        let pkB64 = address;
+        ALLOWED_PREFIXES.forEach((prefix) => {
+            pkB64 = pkB64.replace(prefix, '');
+        });
+
+        return pkB64;
     }
 
     private getPrivateKey(): crypto.KeyObject {
@@ -348,12 +363,12 @@ export class AiXpBC {
         const sharedSecret = ecdh.computeSecret(Buffer.from(publicKeyHex, 'hex'));
 
         const key = hkdf(sharedSecret, 32, {
-          info: 'AiXp handshake data',
-          salt: Buffer.alloc(0),
-          hash: 'SHA-256',
+            info: 'AiXp handshake data',
+            salt: Buffer.alloc(0),
+            hash: 'SHA-256',
         });
-      
-        const hkdfKey = Buffer.from(key);        
+
+        const hkdfKey = Buffer.from(key);
 
         return hkdfKey;
     }
