@@ -19,6 +19,7 @@ export class UpdatePipelineInstanceRequest extends NodeRequest {
 
         switch (notification.data.code) {
             case ResponseCodes.PLUGIN_OK:
+            case ResponseCodes.PLUGIN_INSTANCE_CONFIG_OK:
             case ResponseCodes.PLUGIN_RESUME_OK:
             case ResponseCodes.PLUGIN_PAUSE_OK:
             case ResponseCodes.PLUGIN_WORKING_HOURS_SHIFT_START:
@@ -27,6 +28,7 @@ export class UpdatePipelineInstanceRequest extends NodeRequest {
                 this.resolve(notification);
                 break;
             case ResponseCodes.PLUGIN_FAILED:
+            case ResponseCodes.PLUGIN_INSTANCE_CONFIG_FAILED:
             case ResponseCodes.PLUGIN_RESUME_FAILED:
             case ResponseCodes.PLUGIN_PAUSE_FAILED:
             case ResponseCodes.PLUGIN_WORKING_HOURS_SHIFT_START_FAILED:
